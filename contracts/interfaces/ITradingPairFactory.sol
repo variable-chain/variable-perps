@@ -2,7 +2,17 @@
 pragma solidity =0.8.20;
 
 interface ITradingPairFactory {
-    event NewPair(address indexed baseToken, address indexed quoteToken, address margin);
+    event PairCreated(
+        address indexed baseToken,
+        address indexed quoteToken,
+        address margin
+    );
+
+    /**
+     * @dev Sets a new Margin factory contract.
+     * @param marginFactoryAdd Address of the margin factory contract.
+     */
+    function setMarginFactory(address marginFactoryAdd) external;
 
     /**
      * @dev Creates a new trading pair and its associated margin contract.
@@ -10,7 +20,10 @@ interface ITradingPairFactory {
      * @param quoteToken Address of the quote token for the trading pair.
      * @return margin Address of the newly created trading margin contract.
      */
-    function createPair(address baseToken, address quoteToken) external returns (address margin);
+    function createPair(
+        address baseToken,
+        address quoteToken
+    ) external returns (address margin);
 
     // Address of the margin factory contract responsible for creating and initializing trading margin contracts.
     function marginFactory() external view returns (address);
@@ -21,5 +34,8 @@ interface ITradingPairFactory {
      * @param quoteToken Address of the quote token for the trading pair.
      * @return Address of the associated trading margin contract.
      */
-    function getMargin(address baseToken, address quoteToken) external view returns (address);
+    function getMargin(
+        address baseToken,
+        address quoteToken
+    ) external view returns (address);
 }

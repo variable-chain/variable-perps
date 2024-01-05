@@ -8,7 +8,11 @@ interface ITradingMargin {
         uint256 tradeSize; //if quoteSize>0 unrealizedPnl = baseValueOfQuoteSize - tradeSize; if quoteSize<0 unrealizedPnl = tradeSize - baseValueOfQuoteSize;
     }
 
-    event AddMargin(address indexed trader, uint256 depositAmount, Position position);
+    event AddMargin(
+        address indexed trader,
+        uint256 depositAmount,
+        Position position
+    );
     event RemoveMargin(
         address indexed trader,
         address indexed to,
@@ -48,10 +52,7 @@ interface ITradingMargin {
      * @param baseToken_ Address of the base token.
      * @param quoteToken_ Address of the quote token.
      */
-    function initialize(
-        address baseToken_,
-        address quoteToken_
-    ) external;
+    function initialize(address baseToken_, address quoteToken_) external;
 
     /**
      * @notice Adds margin to a trader's position.
@@ -91,19 +92,19 @@ interface ITradingMargin {
      * @param quoteAmount Amount of quote token to be received from closing the position.
      * @return baseAmount Amount of base token returned from closing the position.
      */
-    function closeTradePosition(address trader, uint256 quoteAmount) external returns (uint256 baseAmount);
+    function closeTradePosition(
+        address trader,
+        uint256 quoteAmount
+    ) external returns (uint256 baseAmount);
 
     /**
      * @notice Liquidates a trader's position.
      * @param trader Address of the trader to be liquidated.
      */
-    function liquidatePosition(address trader, address to)
-        external
-        returns (
-            uint256 quoteAmount,
-            uint256 baseAmount,
-            uint256 bonus
-        );
+    function liquidatePosition(
+        address trader,
+        address to
+    ) external returns (uint256 quoteAmount, uint256 baseAmount, uint256 bonus);
 
     /**
      * @notice Updates the position of a trader after a trade occurs on the AMM.
@@ -136,27 +137,30 @@ interface ITradingMargin {
     function totalPosition() external view returns (uint256 totalQuotePosition);
 
     /// @notice get trader's position
-    function getPosition(address trader)
+    function getPosition(
+        address trader
+    )
         external
         view
-        returns (
-            int256 baseSize,
-            int256 quoteSize,
-            uint256 tradeSize
-        );
+        returns (int256 baseSize, int256 quoteSize, uint256 tradeSize);
 
     /// @notice get withdrawable margin of trader
-    function getWithdrawable(address trader) external view returns (uint256 amount);
+    function getWithdrawable(
+        address trader
+    ) external view returns (uint256 amount);
 
     /// @notice check if can liquidate this trader's position
     function canLiquidate(address trader) external view returns (bool);
 
     /// @notice calculate the latest funding fee with current position
-    function calFundingFee(address trader) external view returns (int256 fundingFee);
+    function calFundingFee(
+        address trader
+    ) external view returns (int256 fundingFee);
 
     /// @notice calculate the latest debt ratio with Pnl and funding fee
-    function calDebtRatio(address trader) external view returns (uint256 debtRatio);
+    function calDebtRatio(
+        address trader
+    ) external view returns (uint256 debtRatio);
 
     function calUnrealizedPnl(address trader) external view returns (int256);
-
 }
