@@ -24,6 +24,12 @@ contract PriceOracle is Ownable {
     // Mapping to associate unique Perp addresses with Pyth Price ID and Chainlink Oracle Address
     mapping(address => PriceOracleEntry) public priceOracleEntries;
 
+    event PriceOracleAdded(
+        address indexed perpAddress,
+        address oracleAddress,
+        bytes32 pythId
+    );
+
     /**
      * @dev Constructor to initialize the PriceOracle contract.
      * @param _pythContractAddress The address of the Pyth contract.
@@ -74,6 +80,7 @@ contract PriceOracle is Ownable {
             pythPriceId,
             chainlinkOracleAddress
         );
+        emit PriceOracleAdded(perpAddress, chainlinkOracleAddress, pythPriceId);
     }
 
     /**
