@@ -1,7 +1,17 @@
 {
   "name": "hardhat-project",
   "devDependencies": {
-    "@nomicfoundation/hardhat-toolbox": "^4.0.0",
+    "@nomiclabs/hardhat-ethers": "^2.2.3",
+    "ethers": "^5.7.2",
     "hardhat": "^2.19.4"
+  },
+  "dependencies": {
+    "@chainlink/contracts": "^0.8.0",
+    "@nomiclabs/hardhat-etherscan": "^3.1.8",
+    "@openzeppelin/contracts": "^5.0.1",
+    "@pythnetwork/pyth-sdk-solidity": "^2.3.0",
+    "@uniswap/v2-core": "^1.0.1",
+    "abdk-libraries-solidity": "^3.2.0",
+    "dotenv": "^16.3.1"
   }
 }
