@@ -3,8 +3,9 @@ pragma solidity =0.8.20;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 
-contract VariableVault is Ownable {
+contract VariableVault is Ownable, ReentrancyGuard {
     address public immutable usdcToken;
 
     struct BalanceInfo {
@@ -12,6 +13,8 @@ contract VariableVault is Ownable {
         uint256 lockedAmount;
     }
     mapping(address => BalanceInfo) public balances;
+
+    mapping(address => mapping(address => uint256)) public perpMarginBalances;
 
     event Deposit(address indexed user, address indexed token, uint256 amount);
     event Withdrawal(
@@ -31,7 +34,7 @@ contract VariableVault is Ownable {
     receive() external payable {}
 
     // Deposit and Withdraw ERC-20 token
-    function depositUsdc(uint256 amount) external {
+    function depositUsdc(uint256 amount) external nonReentrant {
         BalanceInfo storage balanceInfo = balances[msg.sender];
         require(amount > 0, "VariableVault: Amount must be greater than 0");
 
@@ -45,7 +48,7 @@ contract VariableVault is Ownable {
     }
 
     // Withdraw native ETH or ERC-20 token
-    function withdraw(uint256 amount) external {
+    function withdraw(uint256 amount) external nonReentrant {
         BalanceInfo storage balanceInfo = balances[msg.sender];
         require(
             amount > 0 && amount <= balanceInfo.availableAmount,
@@ -61,20 +64,31 @@ contract VariableVault is Ownable {
     }
 
     // called by perp margin contract
-    function updateUserLedger(
+    function openMarginPosition(
         uint256 amount,
         address trader,
-        bool openPosition
+        address perpMargin
     ) external {
+        require(msg.sender == perpMargin, "VariableVault: Unauthorized Access");
         require(amount > 0, "VariableVault: Invalid amount");
         BalanceInfo storage balanceInfo = balances[trader];
-        if (openPosition) {
-            balanceInfo.lockedAmount += amount;
-            balanceInfo.availableAmount -= amount;
-        } else {
-            balanceInfo.lockedAmount -= amount;
-            balanceInfo.availableAmount += amount;
-        }
+        perpMarginBalances[trader][perpMargin] += amount;
+        balanceInfo.lockedAmount += amount;
+        balanceInfo.availableAmount -= amount;
+    }
+
+    // called by perp margin contract
+    function closeMarginPosition(
+        uint256 amount,
+        address trader,
+        address perpMargin
+    ) external {
+        require(msg.sender == perpMargin, "VariableVault: Unauthorized Access");
+        require(amount > 0, "VariableVault: Invalid amount");
+        BalanceInfo storage balanceInfo = balances[trader];
+        perpMarginBalances[trader][perpMargin] -= amount;
+        balanceInfo.lockedAmount -= amount;
+        balanceInfo.availableAmount += amount;
     }
 
     // Owner can withdraw any remaining balance
