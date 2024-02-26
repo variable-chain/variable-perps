@@ -5,11 +5,14 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/interfaces/IERC20.sol";
 import "../interfaces/IPriceOracle.sol";
+import "../interfaces/IVariableVault.sol";
 
 contract VariableLedger is Ownable, ReentrancyGuard {
     address public baseToken;
     address public quoteToken;
     address public priceOracle;
+
+    IVariableVault public variableVault;
 
     struct Position {
         int256 quoteSize; //quote amount of position
@@ -19,28 +22,8 @@ contract VariableLedger is Ownable, ReentrancyGuard {
 
     mapping(address => Position) public traderPositionMap;
     mapping(address => int256) public traderCPF;
-    event Deposit(address indexed user, uint256 amount);
-    event Withdraw(
-        address indexed user,
-        address indexed receiver,
-        uint256 amount
-    );
-    event AddMargin(
-        address indexed trader,
-        uint256 depositAmount,
-        Position position
-    );
-    event RemoveMargin(
-        address indexed trader,
-        address indexed to,
-        uint256 withdrawAmount,
-        int256 fundingFee,
-        uint256 withdrawAmountFromMargin,
-        Position position
-    );
     event OpenPosition(
         address indexed trader,
-        uint8 side,
         uint256 baseAmount,
         uint256 quoteAmount,
         int256 fundingFee,
@@ -57,46 +40,82 @@ contract VariableLedger is Ownable, ReentrancyGuard {
     constructor(
         address _initialOwner,
         address _baseToken,
-        address _quoteToken
+        address _quoteToken,
+        address _variableVault
     ) Ownable(_initialOwner) {
         baseToken = _baseToken;
         quoteToken = _quoteToken;
+        variableVault = IVariableVault(_variableVault);
     }
 
-    function addMargin(
-        address trader,
-        uint256 depositAmount
-    ) external nonReentrant {
-        Position memory traderPosition = traderPositionMap[trader];
-
-        //traderPosition.baseSize = traderPosition.baseSize.addU(depositAmount);
-        traderPositionMap[trader] = traderPosition;
-
-        emit AddMargin(trader, depositAmount, traderPosition);
+    function updateVariableVault(address newVault) external onlyOwner {
+        require(newVault != address(0), "VariableVault: Invalid address");
+        variableVault = IVariableVault(newVault);
     }
 
-    //remove baseToken from trader's fundingFee+unrealizedPnl+margin, remain position need to meet the requirement of initMarginRatio
-    function removeMargin(
+    function setDepositCap(
+        address token,
+        uint256 depositCap
+    ) external onlyOwner {}
+
+    function setMaxCollateralTokensPerAccount(
+        uint8 maxCollateralTokensPerAccount
+    ) external onlyOwner {}
+
+    function setLiquidationRatio(uint24 liquidationRatio) external onlyOwner {}
+
+    function setCLInsuranceFundFeeRatio(
+        uint24 clInsuranceFundFeeRatio
+    ) external onlyOwner {}
+
+    function setDebtThreshold(uint256 debtThreshold) external onlyOwner {}
+
+    function openPositionInVault(
+        uint256 amount,
         address trader,
-        address to,
-        uint256 withdrawAmount
+        address perpMargin
     ) external nonReentrant {
+        (uint256 avalAmount, ) = variableVault.balances(trader);
+        // Check if the trader has sufficient balance in the VariableVault
         require(
-            withdrawAmount > 0,
-            "Margin.removeMargin: ZERO_WITHDRAW_AMOUNT"
+            amount <= avalAmount,
+            "VariableLedger: Insufficient balance in VariableVault"
         );
+
+        // Call the openPosition function of VariableVault
+        variableVault.openMarginPosition(amount, trader, perpMargin);
+
+        // Update the trader's position in the VariableLedger contract
+        Position storage traderPosition = traderPositionMap[trader];
+        traderPosition.baseSize += int256(amount); // Update the baseSize in VariableLedger
+        traderPosition.quoteSize += int256(amount); // Update the quoteSize in VariableLedger
+
+        // Emit an event or perform any other necessary actions
+        emit OpenPosition(trader, 0, amount, 0, traderPosition);
     }
 
-    function openPosition(
+    function closePositionInVault(
+        uint256 amount,
         address trader,
-        uint8 side,
-        uint256 quoteAmount
-    ) external nonReentrant returns (uint256 baseAmount) {}
+        address perpMargin
+    ) external nonReentrant {
+        // Check if the trader has a position to close in the VariableLedger
+        Position storage traderPosition = traderPositionMap[trader];
+        require(
+            amount <= uint256(traderPosition.quoteSize),
+            "VariableLedger.closePositionInVault: Insufficient position to close"
+        );
 
-    function closePosition(
-        address trader,
-        uint256 quoteAmount
-    ) external nonReentrant returns (uint256 baseAmount) {}
+        // Call the closeMarginPosition function of VariableVault
+        variableVault.closeMarginPosition(amount, trader, perpMargin);
+
+        // Update the trader's position in the VariableLedger contract
+        traderPosition.baseSize -= int256(amount); // Update the baseSize in VariableLedger
+        traderPosition.quoteSize -= int256(amount); // Update the quoteSize in VariableLedger
+
+        // Emit an event or perform any other necessary actions
+        emit ClosePosition(trader, 0, amount, 0, traderPosition);
+    }
 
     function liquidate(
         address trader,
@@ -116,32 +135,6 @@ contract VariableLedger is Ownable, ReentrancyGuard {
         uint256 baseAmount,
         uint256 quoteAmount
     ) internal returns (uint256 bonus) {}
-
-    function deposit(address user, uint256 amount) external nonReentrant {
-        require(amount > 0, "Margin.deposit: AMOUNT_IS_ZERO");
-        uint256 balance = IERC20(baseToken).balanceOf(address(this));
-
-        emit Deposit(user, amount);
-    }
-
-    function withdraw(
-        address user,
-        address receiver,
-        uint256 amount
-    ) external nonReentrant {
-        _withdraw(user, receiver, amount);
-    }
-
-    function _withdraw(
-        address user,
-        address receiver,
-        uint256 amount
-    ) internal {
-        require(amount > 0, "Margin._withdraw: AMOUNT_IS_ZERO");
-        IERC20(baseToken).transfer(receiver, amount);
-
-        emit Withdraw(user, receiver, amount);
-    }
 
     function updateCPF() public returns (int256 newLatestCPF) {}
 
