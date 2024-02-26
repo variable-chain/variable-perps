@@ -30,8 +30,13 @@ contract VariableVault is Ownable, ReentrancyGuard {
         usdcToken = _usdcToken;
     }
 
-    // Function to receive native ETH
-    receive() external payable {}
+    function setFees() external onlyOwner {}
+
+    function setFundingRate(
+        uint256 fundingInterval,
+        uint256 fundingRateFactor,
+        uint256 stableFundingRateFactor
+    ) external onlyOwner {}
 
     // Deposit and Withdraw ERC-20 token
     function depositUsdc(uint256 amount) external nonReentrant {
