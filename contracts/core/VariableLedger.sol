@@ -48,11 +48,6 @@ contract VariableLedger is Ownable, ReentrancyGuard {
         variableVault = IVariableVault(_variableVault);
     }
 
-    function updateVariableVault(address newVault) external onlyOwner {
-        require(newVault != address(0), "VariableVault: Invalid address");
-        variableVault = IVariableVault(newVault);
-    }
-
     function setDepositCap(
         address token,
         uint256 depositCap
