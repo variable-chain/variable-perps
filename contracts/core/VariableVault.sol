@@ -6,6 +6,7 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 
 contract VariableVault is Ownable, ReentrancyGuard {
+    uint256 public withdrawCap;
     address public immutable usdcToken;
 
     struct BalanceInfo {
@@ -25,9 +26,16 @@ contract VariableVault is Ownable, ReentrancyGuard {
 
     constructor(
         address _initialOwner,
-        address _usdcToken
+        address _usdcToken,
+        uint256 _withdrawCap
     ) Ownable(_initialOwner) {
         usdcToken = _usdcToken;
+        withdrawCap = _withdrawCap;
+    }
+
+    function updateWithdrawCap(uint256 newCap) external onlyOwner {
+        require(newCap != 0, "VariableVault: Invalid withdrawal amount");
+        withdrawCap = newCap;
     }
 
     function setFees() external onlyOwner {}
@@ -54,6 +62,7 @@ contract VariableVault is Ownable, ReentrancyGuard {
 
     // Withdraw native ETH or ERC-20 token
     function withdraw(uint256 amount) external nonReentrant {
+        require(amount <= withdrawCap, "VariableVault: cap exceeds");
         BalanceInfo storage balanceInfo = balances[msg.sender];
         require(
             amount > 0 && amount <= balanceInfo.availableAmount,
