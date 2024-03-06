@@ -2,6 +2,8 @@
 pragma solidity =0.8.20;
 
 library VariableFundingLibrary {
+    uint256 private constant DECIMALS = 18;
+
     function calculateFundingRate(
         uint256 perpPrice,
         uint256 spotPrice,
@@ -21,9 +23,10 @@ library VariableFundingLibrary {
             averagePrice,
             leverageFactor
         );
-        uint256 fundingRate = ((perpPrice - spotPrice) / spotPrice) *
+        uint256 fundingRate = (((perpPrice - spotPrice) * 10 ** DECIMALS) *
             interestRate *
-            timeFactor +
+            timeFactor) /
+            spotPrice +
             premComponent;
 
         return fundingRate;
@@ -40,8 +43,8 @@ library VariableFundingLibrary {
             "VariableFundingLibrary: Average price cannot be zero"
         );
 
-        uint256 premComponent = ((perpPrice - spotPrice) / averagePrice) *
-            leverageFactor;
+        uint256 premComponent = (((perpPrice - spotPrice) * 10 ** DECIMALS) *
+            leverageFactor) / averagePrice;
 
         return premComponent;
     }
