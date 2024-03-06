@@ -15,6 +15,7 @@ interface IVariableOrderSettlement {
         uint256 entryPrice;
         uint256 positionSize;
         uint256 leverageRatio;
+        uint256 fundingFee;
         SideType side;
         OrderType orderType;
         bytes32 referralCode;
