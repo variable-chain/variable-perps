@@ -11,6 +11,7 @@ contract VariableLedger is Ownable, ReentrancyGuard {
     address public baseToken;
     address public quoteToken;
     address public priceOracle;
+    uint256 public interestRate;
 
     IVariableVault public variableVault;
 
@@ -41,11 +42,18 @@ contract VariableLedger is Ownable, ReentrancyGuard {
         address _initialOwner,
         address _baseToken,
         address _quoteToken,
-        address _variableVault
+        address _variableVault,
+        uint256 _interestRate
     ) Ownable(_initialOwner) {
         baseToken = _baseToken;
         quoteToken = _quoteToken;
         variableVault = IVariableVault(_variableVault);
+        interestRate = _interestRate;
+    }
+
+    function updateInterestRate(uint256 newRate) external onlyOwner {
+        require(newRate!=0, "VariableLedger: Greater than zero");
+        interestRate = newRate;
     }
 
     function setDepositCap(

@@ -35,7 +35,10 @@ contract VariableMarketRegistry is Ownable {
      * @param newVault The new address of the VariableVault contract.
      */
     function updateVariableVault(address newVault) external onlyOwner {
-        require(newVault != address(0), "VariableVault: Invalid address");
+        require(
+            newVault != address(0),
+            "VariableMarketRegistry: Invalid address"
+        );
         variableVault = newVault;
     }
 
@@ -47,19 +50,23 @@ contract VariableMarketRegistry is Ownable {
      */
     function createPerpLedger(
         address baseToken,
-        address quoteToken
+        address quoteToken,
+        uint256 interestRate
     ) external returns (address margin) {
         // Ensure baseToken and quoteToken are different and not zero addresses.
-        require(baseToken != quoteToken, "TMF: Identical addresses");
+        require(
+            baseToken != quoteToken,
+            "VariableMarketRegistry: Identical addresses"
+        );
         require(
             baseToken != address(0) && quoteToken != address(0),
-            "TMF: Invalid Address"
+            "VariableMarketRegistry: Invalid Address"
         );
 
         // Ensure no existing contract for the given pair.
         require(
             getPerpLedger[baseToken][quoteToken] == address(0),
-            "TMF: Contract exists"
+            "VariableMarketRegistry: Contract exists"
         );
 
         // Generate a salt using the keccak256 hash of the pair's baseToken and quoteToken.
@@ -71,7 +78,8 @@ contract VariableMarketRegistry is Ownable {
                 owner(),
                 baseToken,
                 quoteToken,
-                variableVault
+                variableVault,
+                interestRate
             )
         );
 
