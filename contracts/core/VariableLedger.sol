@@ -98,6 +98,7 @@ contract VariableLedger is Ownable, ReentrancyGuard {
 
     function closePositionInVault(
         uint256 amount,
+        int256 fundingFee,
         address trader
     ) external nonReentrant {
         // Check if the trader has a position to close in the VariableLedger
@@ -106,13 +107,14 @@ contract VariableLedger is Ownable, ReentrancyGuard {
             amount <= uint256(traderPosition.quoteSize),
             "VariableLedger.closePositionInVault: Insufficient position to close"
         );
-
+        // calculate fee components
+        int256 netAmount = int256(amount) - fundingFee;
         // Call the closeMarginPosition function of VariableVault
-        variableVault.closeMarginPosition(amount, trader, address(this));
+        variableVault.closeMarginPosition(netAmount, trader, address(this));
 
         // Update the trader's position in the VariableLedger contract
-        traderPosition.baseSize -= int256(amount); // Update the baseSize in VariableLedger
-        traderPosition.quoteSize -= int256(amount); // Update the quoteSize in VariableLedger
+        traderPosition.baseSize -= int256(amount); 
+        traderPosition.quoteSize -= int256(amount);
 
         // Emit an event or perform any other necessary actions
         emit ClosePosition(trader, 0, amount, 0, traderPosition);

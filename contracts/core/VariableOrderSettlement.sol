@@ -108,6 +108,7 @@ contract VariableOrderSettlement is
                     } else {
                         IVariableLedger(perpMarket).closePositionInVault(
                             matchedPositionSize,
+                            buyOrder.buyerFundingFee,
                             buyOrder.buyer
                         );
                     }
@@ -120,6 +121,7 @@ contract VariableOrderSettlement is
                     } else {
                         IVariableLedger(perpMarket).closePositionInVault(
                             matchedPositionSize,
+                            sellOrder.sellerFundingFee,
                             sellOrder.seller
                         );
                     }
@@ -174,6 +176,7 @@ contract VariableOrderSettlement is
                     } else {
                         IVariableLedger(perpMarket).closePositionInVault(
                             matchedPositionSize,
+                            buyOrder.buyerFundingFee,
                             buyOrder.buyer
                         );
                     }
@@ -186,6 +189,7 @@ contract VariableOrderSettlement is
                     } else {
                         IVariableLedger(perpMarket).closePositionInVault(
                             matchedPositionSize,
+                            sellOrder.sellerFundingFee,
                             sellOrder.seller
                         );
                     }

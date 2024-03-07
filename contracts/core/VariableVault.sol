@@ -93,16 +93,16 @@ contract VariableVault is Ownable, ReentrancyGuard {
 
     // called by perp margin contract
     function closeMarginPosition(
-        uint256 amount,
+        int256 amount,
         address trader,
         address perpMargin
     ) external {
         require(msg.sender == perpMargin, "VariableVault: Unauthorized Access");
         require(amount > 0, "VariableVault: Invalid amount");
         BalanceInfo storage balanceInfo = balances[trader];
-        perpMarginBalances[trader][perpMargin] -= amount;
-        balanceInfo.lockedAmount -= amount;
-        balanceInfo.availableAmount += amount;
+        perpMarginBalances[trader][perpMargin] -= uint256(amount);
+        balanceInfo.lockedAmount -= uint256(amount);
+        balanceInfo.availableAmount += uint256(amount);
     }
 
     // Owner can withdraw any remaining balance

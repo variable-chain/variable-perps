@@ -15,6 +15,7 @@ interface IVariableLedger {
 
     function closePositionInVault(
         uint256 amount,
+        int256 fundingFee,
         address trader
     ) external;
 

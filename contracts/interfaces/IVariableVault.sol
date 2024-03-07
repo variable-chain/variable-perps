@@ -24,7 +24,7 @@ interface IVariableVault {
     ) external;
 
     function closeMarginPosition(
-        uint256 amount,
+        int256 amount,
         address trader,
         address perpMargin
     ) external;

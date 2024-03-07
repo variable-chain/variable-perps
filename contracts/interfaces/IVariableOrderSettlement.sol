@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.0;
+pragma solidity =0.8.20;
 
 /**
  * @title IVariableOrderSettlement
@@ -8,6 +8,8 @@ pragma solidity ^0.8.0;
 interface IVariableOrderSettlement {
     // Order struct
     struct OrderStruct {
+        bool isBuyerOpeningPosition;
+        bool isSellerOpeningPosition;
         address baseToken;
         address quoteToken;
         address buyer;
@@ -15,7 +17,8 @@ interface IVariableOrderSettlement {
         uint256 entryPrice;
         uint256 positionSize;
         uint256 leverageRatio;
-        uint256 fundingFee;
+        int256 buyerFundingFee;
+        int256 sellerFundingFee;
         SideType side;
         OrderType orderType;
         bytes32 referralCode;
