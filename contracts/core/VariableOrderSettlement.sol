@@ -11,7 +11,11 @@ import "../interfaces/IVariableOrderSettlement.sol";
  * @title VariableOrderSettlement
  * @dev Smart contract for settling matched orders between buyers and sellers in a decentralized trading system.
  */
-contract VariableOrderSettlement is Ownable, ReentrancyGuard, IVariableOrderSettlement{
+contract VariableOrderSettlement is
+    Ownable,
+    ReentrancyGuard,
+    IVariableOrderSettlement
+{
     IVariableMarketRegistry public variableMarketRegistry;
 
     /**
@@ -19,10 +23,13 @@ contract VariableOrderSettlement is Ownable, ReentrancyGuard, IVariableOrderSett
      * @param _initialOwner The initial owner of the contract.
      * @param _variableMarketRegistry The address of the Variable Market Registry contract.
      */
-    constructor(
-        address _initialOwner,
-        address _variableMarketRegistry
-    ) Ownable(_initialOwner) {
+    constructor(address _initialOwner, address _variableMarketRegistry)
+        Ownable(_initialOwner)
+    {
+        require(
+            _variableMarketRegistry != address(0),
+            "VariableVault: Invalid address"
+        );
         variableMarketRegistry = IVariableMarketRegistry(
             _variableMarketRegistry
         );
@@ -32,9 +39,10 @@ contract VariableOrderSettlement is Ownable, ReentrancyGuard, IVariableOrderSett
      * @dev Updates the Variable Market Registry address.
      * @param newMarketRegistry The new address of the Variable Market Registry contract.
      */
-    function updateVariableMarketRegistry(
-        address newMarketRegistry
-    ) external onlyOwner {
+    function updateVariableMarketRegistry(address newMarketRegistry)
+        external
+        onlyOwner
+    {
         require(
             newMarketRegistry != address(0),
             "VariableVault: Invalid address"
@@ -86,19 +94,35 @@ contract VariableOrderSettlement is Ownable, ReentrancyGuard, IVariableOrderSett
                         : sellOrder.positionSize;
 
                     // Get the Perpetual Market contract address
-                    address perpMarket = IVariableMarketRegistry(
-                        variableMarketRegistry
-                    ).getPerpLedger(buyOrder.baseToken, buyOrder.quoteToken);
+                    address perpMarket = variableMarketRegistry.getPerpLedger(
+                        buyOrder.baseToken,
+                        buyOrder.quoteToken
+                    );
 
                     // Update perpMarginBalance and balanceInfo for the buyer and seller
-                    IVariableLedger(perpMarket).openPositionInVault(
-                        matchedPositionSize,
-                        buyOrder.buyer
-                    );
-                    IVariableLedger(perpMarket).openPositionInVault(
-                        matchedPositionSize,
-                        sellOrder.seller
-                    );
+                    if (buyOrder.isBuyerOpeningPosition) {
+                        IVariableLedger(perpMarket).openPositionInVault(
+                            matchedPositionSize,
+                            buyOrder.buyer
+                        );
+                    } else {
+                        IVariableLedger(perpMarket).closePositionInVault(
+                            matchedPositionSize,
+                            buyOrder.buyer
+                        );
+                    }
+
+                    if (sellOrder.isSellerOpeningPosition) {
+                        IVariableLedger(perpMarket).openPositionInVault(
+                            matchedPositionSize,
+                            sellOrder.seller
+                        );
+                    } else {
+                        IVariableLedger(perpMarket).closePositionInVault(
+                            matchedPositionSize,
+                            sellOrder.seller
+                        );
+                    }
 
                     // Adjust position size of the buy order
                     buyOrders[i].positionSize -= matchedPositionSize;
@@ -136,19 +160,35 @@ contract VariableOrderSettlement is Ownable, ReentrancyGuard, IVariableOrderSett
                         : sellOrder.positionSize;
 
                     // Get the Perpetual Market contract address
-                    address perpMarket = IVariableMarketRegistry(
-                        variableMarketRegistry
-                    ).getPerpLedger(buyOrder.baseToken, buyOrder.quoteToken);
+                    address perpMarket = variableMarketRegistry.getPerpLedger(
+                        buyOrder.baseToken,
+                        buyOrder.quoteToken
+                    );
 
                     // Update perpMarginBalance and balanceInfo for the buyer and seller
-                    IVariableLedger(perpMarket).openPositionInVault(
-                        matchedPositionSize,
-                        buyOrder.buyer
-                    );
-                    IVariableLedger(perpMarket).openPositionInVault(
-                        matchedPositionSize,
-                        sellOrder.seller
-                    );
+                    if (buyOrder.isBuyerOpeningPosition) {
+                        IVariableLedger(perpMarket).openPositionInVault(
+                            matchedPositionSize,
+                            buyOrder.buyer
+                        );
+                    } else {
+                        IVariableLedger(perpMarket).closePositionInVault(
+                            matchedPositionSize,
+                            buyOrder.buyer
+                        );
+                    }
+
+                    if (sellOrder.isSellerOpeningPosition) {
+                        IVariableLedger(perpMarket).openPositionInVault(
+                            matchedPositionSize,
+                            sellOrder.seller
+                        );
+                    } else {
+                        IVariableLedger(perpMarket).closePositionInVault(
+                            matchedPositionSize,
+                            sellOrder.seller
+                        );
+                    }
 
                     // Adjust position size of the sell order
                     sellOrders[i].positionSize -= matchedPositionSize;
