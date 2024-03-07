@@ -75,8 +75,7 @@ contract VariableLedger is Ownable, ReentrancyGuard {
 
     function openPositionInVault(
         uint256 amount,
-        address trader,
-        address perpMargin
+        address trader
     ) external nonReentrant {
         (uint256 avalAmount, ) = variableVault.balances(trader);
         // Check if the trader has sufficient balance in the VariableVault
@@ -86,7 +85,7 @@ contract VariableLedger is Ownable, ReentrancyGuard {
         );
 
         // Call the openPosition function of VariableVault
-        variableVault.openMarginPosition(amount, trader, perpMargin);
+        variableVault.openMarginPosition(amount, trader, address(this));
 
         // Update the trader's position in the VariableLedger contract
         Position storage traderPosition = traderPositionMap[trader];
@@ -99,8 +98,7 @@ contract VariableLedger is Ownable, ReentrancyGuard {
 
     function closePositionInVault(
         uint256 amount,
-        address trader,
-        address perpMargin
+        address trader
     ) external nonReentrant {
         // Check if the trader has a position to close in the VariableLedger
         Position storage traderPosition = traderPositionMap[trader];
@@ -110,7 +108,7 @@ contract VariableLedger is Ownable, ReentrancyGuard {
         );
 
         // Call the closeMarginPosition function of VariableVault
-        variableVault.closeMarginPosition(amount, trader, perpMargin);
+        variableVault.closeMarginPosition(amount, trader, address(this));
 
         // Update the trader's position in the VariableLedger contract
         traderPosition.baseSize -= int256(amount); // Update the baseSize in VariableLedger

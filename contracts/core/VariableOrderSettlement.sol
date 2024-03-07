@@ -93,13 +93,11 @@ contract VariableOrderSettlement is Ownable, ReentrancyGuard, IVariableOrderSett
                     // Update perpMarginBalance and balanceInfo for the buyer and seller
                     IVariableLedger(perpMarket).openPositionInVault(
                         matchedPositionSize,
-                        buyOrder.buyer,
-                        address(this)
+                        buyOrder.buyer
                     );
                     IVariableLedger(perpMarket).openPositionInVault(
                         matchedPositionSize,
-                        sellOrder.seller,
-                        address(this)
+                        sellOrder.seller
                     );
 
                     // Adjust position size of the buy order
@@ -145,13 +143,11 @@ contract VariableOrderSettlement is Ownable, ReentrancyGuard, IVariableOrderSett
                     // Update perpMarginBalance and balanceInfo for the buyer and seller
                     IVariableLedger(perpMarket).openPositionInVault(
                         matchedPositionSize,
-                        buyOrder.buyer,
-                        address(this)
+                        buyOrder.buyer
                     );
                     IVariableLedger(perpMarket).openPositionInVault(
                         matchedPositionSize,
-                        sellOrder.seller,
-                        address(this)
+                        sellOrder.seller
                     );
 
                     // Adjust position size of the sell order

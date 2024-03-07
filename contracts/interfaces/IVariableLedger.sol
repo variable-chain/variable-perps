@@ -10,14 +10,12 @@ interface IVariableLedger {
 
     function openPositionInVault(
         uint256 amount,
-        address trader,
-        address perpMargin
+        address trader
     ) external;
 
     function closePositionInVault(
         uint256 amount,
-        address trader,
-        address perpMargin
+        address trader
     ) external;
 
     function liquidate(
