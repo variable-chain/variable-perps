@@ -13,6 +13,7 @@ contract VariableVault is Ownable, ReentrancyGuard {
         uint256 availableAmount;
         uint256 lockedAmount;
     }
+
     mapping(address => BalanceInfo) public balances;
 
     mapping(address => mapping(address => uint256)) public perpMarginBalances;

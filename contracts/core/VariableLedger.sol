@@ -4,6 +4,7 @@ pragma solidity =0.8.20;
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/interfaces/IERC20.sol";
+import "./VariableOrderSettlement.sol";
 import "../interfaces/IPriceOracle.sol";
 import "../interfaces/IVariableVault.sol";
 
@@ -16,13 +17,14 @@ contract VariableLedger is Ownable, ReentrancyGuard {
     IVariableVault public variableVault;
 
     struct Position {
-        int256 quoteSize; //quote amount of position
-        int256 baseSize; //margin + fundingFee + unrealizedPnl + deltaBaseWhenClosePosition
-        uint256 tradeSize; //if quoteSize>0 unrealizedPnl = baseValueOfQuoteSize - tradeSize; if quoteSize<0 unrealizedPnl = tradeSize - baseValueOfQuoteSize;
+        uint256 positionSize;
+        uint256 allocatedCollateral;
+        bool isLong;
     }
 
-    mapping(address => Position) public traderPositionMap;
-    mapping(address => int256) public traderCPF;
+    // mapping of user -> positionId -> position
+    mapping(address => mapping(bytes32 => Position)) public traderPositions;
+
     event OpenPosition(
         address indexed trader,
         uint256 baseAmount,
@@ -52,7 +54,7 @@ contract VariableLedger is Ownable, ReentrancyGuard {
     }
 
     function updateInterestRate(uint256 newRate) external onlyOwner {
-        require(newRate!=0, "VariableLedger: Greater than zero");
+        require(newRate != 0, "VariableLedger: Greater than zero");
         interestRate = newRate;
     }
 
@@ -75,7 +77,10 @@ contract VariableLedger is Ownable, ReentrancyGuard {
 
     function openPositionInVault(
         uint256 amount,
-        address trader
+        uint256 leverageRatio,
+        address trader,
+        bytes32 positionId,
+        bool isLong
     ) external nonReentrant {
         (uint256 avalAmount, ) = variableVault.balances(trader);
         // Check if the trader has sufficient balance in the VariableVault
@@ -83,38 +88,59 @@ contract VariableLedger is Ownable, ReentrancyGuard {
             amount <= avalAmount,
             "VariableLedger: Insufficient balance in VariableVault"
         );
-
+        uint256 collateralAmount = amount / leverageRatio;
         // Call the openPosition function of VariableVault
-        variableVault.openMarginPosition(amount, trader, address(this));
+        variableVault.openMarginPosition(
+            collateralAmount,
+            trader,
+            address(this)
+        );
 
         // Update the trader's position in the VariableLedger contract
-        Position storage traderPosition = traderPositionMap[trader];
-        traderPosition.baseSize += int256(amount); // Update the baseSize in VariableLedger
-        traderPosition.quoteSize += int256(amount); // Update the quoteSize in VariableLedger
+        Position storage traderPosition = traderPositions[trader][positionId];
+
+        traderPosition.positionSize = amount;
+        traderPosition.allocatedCollateral = amount / leverageRatio;
+        traderPosition.isLong = isLong;
 
         // Emit an event or perform any other necessary actions
-        emit OpenPosition(trader, 0, amount, 0, traderPosition);
+        // emit OpenPosition(trader, 0, amount, 0, traderPosition);
     }
 
     function closePositionInVault(
         uint256 amount,
+        uint256 leverageRatio,
         int256 fundingFee,
-        address trader
+        address trader,
+        bytes32 positionId,
+        bool isLong
     ) external nonReentrant {
         // Check if the trader has a position to close in the VariableLedger
-        Position storage traderPosition = traderPositionMap[trader];
+        Position storage traderPosition = traderPositions[trader][positionId];
         require(
-            amount <= uint256(traderPosition.quoteSize),
+            amount <= uint256(traderPosition.positionSize),
             "VariableLedger.closePositionInVault: Insufficient position to close"
         );
-        // calculate fee components
-        int256 netAmount = int256(amount) - fundingFee;
+        int256 netAmount;
+        if (fundingFee > 0) {
+            netAmount = int(amount) + fundingFee;
+        } else {
+            // calculate fee components
+            netAmount = int256(amount) - fundingFee;
+        }
+        int256 collateralAmount = netAmount / int(leverageRatio);
         // Call the closeMarginPosition function of VariableVault
-        variableVault.closeMarginPosition(netAmount, trader, address(this));
+        variableVault.closeMarginPosition(
+            collateralAmount,
+            trader,
+            address(this)
+        );
 
         // Update the trader's position in the VariableLedger contract
-        traderPosition.baseSize -= int256(amount); 
-        traderPosition.quoteSize -= int256(amount);
+
+        traderPosition.positionSize -= amount;
+        traderPosition.isLong = isLong;
+        traderPosition.allocatedCollateral = amount / leverageRatio;
 
         // Emit an event or perform any other necessary actions
         emit ClosePosition(trader, 0, amount, 0, traderPosition);
@@ -142,23 +168,28 @@ contract VariableLedger is Ownable, ReentrancyGuard {
     function updateCPF() public returns (int256 newLatestCPF) {}
 
     function getPosition(
-        address trader
-    ) external view returns (int256, int256, uint256) {
-        Position memory position = traderPositionMap[trader];
-        return (position.baseSize, position.quoteSize, position.tradeSize);
+        address trader,
+        bytes32 positionId
+    ) external view returns (uint256, uint256, bool) {
+        Position memory position = traderPositions[trader][positionId];
+        return (
+            position.positionSize,
+            position.allocatedCollateral,
+            position.isLong
+        );
     }
 
     function getWithdrawable(
-        address trader
+        address trader,
+        bytes32 positionId
     ) external view returns (uint256 withdrawable) {
-        Position memory position = traderPositionMap[trader];
-        int256 fundingFee = _calFundingFee(trader, _getNewLatestCPF());
-
-        (withdrawable, ) = _getWithdrawable(
-            position.quoteSize,
-            position.baseSize + fundingFee,
-            position.tradeSize
-        );
+        // Position memory position = traderPositions[trader][positionId];
+        // int256 fundingFee = _calFundingFee(trader, _getNewLatestCPF());
+        // (withdrawable, ) = _getWithdrawable(
+        //     position.positionSize,
+        //     position.baseSize + fundingFee,
+        //     position.tradeSize
+        // );
     }
 
     function getNewLatestCPF() external view returns (int256) {
@@ -167,18 +198,19 @@ contract VariableLedger is Ownable, ReentrancyGuard {
 
     function canLiquidate(address trader) external view returns (bool) {}
 
-    function calFundingFee(address trader) public view returns (int256) {
-        return _calFundingFee(trader, _getNewLatestCPF());
-    }
+    // function calFundingFee(address trader) public view returns (int256) {
+    //     return _calFundingFee(trader, _getNewLatestCPF());
+    // }
 
     function calDebtRatio(
         address trader
     ) external view returns (uint256 debtRatio) {}
 
     function calUnrealizedPnl(
-        address trader
+        address trader,
+        bytes32 positionId
     ) external view returns (int256 unrealizedPnl) {
-        Position memory position = traderPositionMap[trader];
+        // Position memory position = traderPositions[trader][positionId];
     }
 
     function netPosition() external view returns (int256) {}
@@ -199,8 +231,7 @@ contract VariableLedger is Ownable, ReentrancyGuard {
 
     function _calFundingFee(
         address trader,
-        int256 _latestCPF
-    ) internal view returns (int256) {
-        Position memory position = traderPositionMap[trader];
-    }
+        int256 _latestCPF,
+        bytes32 positionId
+    ) internal view returns (int256) {}
 }

@@ -23,9 +23,10 @@ contract VariableOrderSettlement is
      * @param _initialOwner The initial owner of the contract.
      * @param _variableMarketRegistry The address of the Variable Market Registry contract.
      */
-    constructor(address _initialOwner, address _variableMarketRegistry)
-        Ownable(_initialOwner)
-    {
+    constructor(
+        address _initialOwner,
+        address _variableMarketRegistry
+    ) Ownable(_initialOwner) {
         require(
             _variableMarketRegistry != address(0),
             "VariableVault: Invalid address"
@@ -39,10 +40,9 @@ contract VariableOrderSettlement is
      * @dev Updates the Variable Market Registry address.
      * @param newMarketRegistry The new address of the Variable Market Registry contract.
      */
-    function updateVariableMarketRegistry(address newMarketRegistry)
-        external
-        onlyOwner
-    {
+    function updateVariableMarketRegistry(
+        address newMarketRegistry
+    ) external onlyOwner {
         require(
             newMarketRegistry != address(0),
             "VariableVault: Invalid address"
@@ -71,12 +71,6 @@ contract VariableOrderSettlement is
                 for (uint256 j = 0; j < sellOrderLength; j++) {
                     OrderStruct memory sellOrder = sellOrders[j];
 
-                    // Validate order sides and parameters
-                    require(
-                        buyOrder.side == SideType.LONG &&
-                            sellOrder.side == SideType.SHORT,
-                        "VariableOrderMatcher: Invalid order sides"
-                    );
                     require(
                         buyOrder.baseToken == sellOrder.baseToken &&
                             buyOrder.quoteToken == sellOrder.quoteToken,
@@ -103,26 +97,38 @@ contract VariableOrderSettlement is
                     if (buyOrder.isBuyerOpeningPosition) {
                         IVariableLedger(perpMarket).openPositionInVault(
                             matchedPositionSize,
-                            buyOrder.buyer
+                            buyOrder.leverageRatio,
+                            buyOrder.buyer,
+                            buyOrder.positionId,
+                            buyOrder.isBuyerLong
                         );
                     } else {
                         IVariableLedger(perpMarket).closePositionInVault(
                             matchedPositionSize,
+                            buyOrder.leverageRatio,
                             buyOrder.buyerFundingFee,
-                            buyOrder.buyer
+                            buyOrder.buyer,
+                            buyOrder.positionId,
+                            buyOrder.isBuyerLong
                         );
                     }
 
                     if (sellOrder.isSellerOpeningPosition) {
                         IVariableLedger(perpMarket).openPositionInVault(
                             matchedPositionSize,
-                            sellOrder.seller
+                            sellOrder.leverageRatio,
+                            sellOrder.seller,
+                            sellOrder.positionId,
+                            sellOrder.isSellerLong
                         );
                     } else {
                         IVariableLedger(perpMarket).closePositionInVault(
                             matchedPositionSize,
+                            sellOrder.leverageRatio,
                             sellOrder.sellerFundingFee,
-                            sellOrder.seller
+                            sellOrder.seller,
+                            sellOrder.positionId,
+                            sellOrder.isSellerLong
                         );
                     }
 
@@ -139,12 +145,6 @@ contract VariableOrderSettlement is
                 for (uint256 j = 0; j < buyOrderLength; j++) {
                     OrderStruct memory buyOrder = buyOrders[j];
 
-                    // Validate order sides and parameters
-                    require(
-                        buyOrder.side == SideType.LONG &&
-                            sellOrder.side == SideType.SHORT,
-                        "VariableOrderMatcher: Invalid order sides"
-                    );
                     require(
                         buyOrder.baseToken == sellOrder.baseToken &&
                             buyOrder.quoteToken == sellOrder.quoteToken,
@@ -171,26 +171,38 @@ contract VariableOrderSettlement is
                     if (buyOrder.isBuyerOpeningPosition) {
                         IVariableLedger(perpMarket).openPositionInVault(
                             matchedPositionSize,
-                            buyOrder.buyer
+                            buyOrder.leverageRatio,
+                            buyOrder.buyer,
+                            buyOrder.positionId,
+                            buyOrder.isBuyerLong
                         );
                     } else {
                         IVariableLedger(perpMarket).closePositionInVault(
                             matchedPositionSize,
+                            buyOrder.leverageRatio,
                             buyOrder.buyerFundingFee,
-                            buyOrder.buyer
+                            buyOrder.buyer,
+                            buyOrder.positionId,
+                            buyOrder.isBuyerLong
                         );
                     }
 
                     if (sellOrder.isSellerOpeningPosition) {
                         IVariableLedger(perpMarket).openPositionInVault(
                             matchedPositionSize,
-                            sellOrder.seller
+                            sellOrder.leverageRatio,
+                            sellOrder.seller,
+                            sellOrder.positionId,
+                            sellOrder.isSellerLong
                         );
                     } else {
                         IVariableLedger(perpMarket).closePositionInVault(
                             matchedPositionSize,
+                            sellOrder.leverageRatio,
                             sellOrder.sellerFundingFee,
-                            sellOrder.seller
+                            sellOrder.seller,
+                            sellOrder.positionId,
+                            sellOrder.isSellerLong
                         );
                     }
 
