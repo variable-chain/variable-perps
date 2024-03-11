@@ -10,6 +10,8 @@ interface IVariableOrderSettlement {
     struct OrderStruct {
         bool isBuyerOpeningPosition;
         bool isSellerOpeningPosition;
+        bool isBuyerLong;
+        bool isSellerLong;
         address baseToken;
         address quoteToken;
         address buyer;
@@ -19,9 +21,9 @@ interface IVariableOrderSettlement {
         uint256 leverageRatio;
         int256 buyerFundingFee;
         int256 sellerFundingFee;
-        SideType side;
         OrderType orderType;
         bytes32 referralCode;
+        bytes32 positionId;
     }
 
     // Enum definitions

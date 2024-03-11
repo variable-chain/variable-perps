@@ -10,13 +10,19 @@ interface IVariableLedger {
 
     function openPositionInVault(
         uint256 amount,
-        address trader
+        uint256 leverageRatio,
+        address trader,
+        bytes32 positionId,
+        bool isLong
     ) external;
 
     function closePositionInVault(
         uint256 amount,
+        uint256 leverageRatio,
         int256 fundingFee,
-        address trader
+        address trader,
+        bytes32 positionId,
+        bool isLong
     ) external;
 
     function liquidate(
@@ -27,11 +33,13 @@ interface IVariableLedger {
     function updateCPF() external returns (int256 newLatestCPF);
 
     function getPosition(
-        address trader
-    ) external view returns (int256, int256, uint256);
+        address trader,
+        bytes32 positionId
+    ) external view returns (uint256, uint256, bool);
 
     function getWithdrawable(
-        address trader
+        address trader,
+        bytes32 positionId
     ) external view returns (uint256 withdrawable);
 
     function getNewLatestCPF() external view returns (int256);
