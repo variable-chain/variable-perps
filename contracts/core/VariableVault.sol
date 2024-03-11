@@ -5,6 +5,8 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 
+import "../interfaces/IVariableLedger.sol";
+
 contract VariableVault is Ownable, ReentrancyGuard {
     uint256 public withdrawCap;
     address public immutable usdcToken;
@@ -15,8 +17,8 @@ contract VariableVault is Ownable, ReentrancyGuard {
     }
 
     mapping(address => BalanceInfo) public balances;
-
-    mapping(address => mapping(address => uint256)) public perpMarginBalances;
+    // need to change this logic for multiple leverage position for same perp market
+    // mapping(address => mapping(address => uint256)) public perpMarginBalances;
 
     event Deposit(address indexed user, address indexed token, uint256 amount);
     event Withdrawal(
@@ -32,6 +34,42 @@ contract VariableVault is Ownable, ReentrancyGuard {
     ) Ownable(_initialOwner) {
         usdcToken = _usdcToken;
         withdrawCap = _withdrawCap;
+    }
+
+    function addMargin(
+        address perpMarket,
+        uint256 marginAmount,
+        bytes32 positionId
+    ) external {
+        require(perpMarket != address(0), "VariableLedger: Invalid Address");
+        require(marginAmount != 0, "VariableLedger: Invalid Amount");
+        // Update the trader's position in the VariableLedger contract
+        BalanceInfo storage balance = balances[msg.sender];
+        balance.availableAmount -= marginAmount;
+        balance.lockedAmount += marginAmount;
+        IVariableLedger(perpMarket).adjustPositionMargin(
+            msg.sender,
+            positionId,
+            marginAmount
+        );
+    }
+
+    function removeMargin(
+        address perpMarket,
+        uint256 marginAmount,
+        bytes32 positionId
+    ) external {
+        require(perpMarket != address(0), "VariableLedger: Invalid Address");
+        require(marginAmount != 0, "VariableLedger: Invalid Amount");
+        // Update the trader's position in the VariableLedger contract
+        BalanceInfo storage balance = balances[msg.sender];
+        balance.availableAmount += marginAmount;
+        balance.lockedAmount -= marginAmount;
+        IVariableLedger(perpMarket).adjustPositionMargin(
+            msg.sender,
+            positionId,
+            marginAmount
+        );
     }
 
     function updateWithdrawCap(uint256 newCap) external onlyOwner {
@@ -87,7 +125,6 @@ contract VariableVault is Ownable, ReentrancyGuard {
         require(msg.sender == perpMargin, "VariableVault: Unauthorized Access");
         require(amount > 0, "VariableVault: Invalid amount");
         BalanceInfo storage balanceInfo = balances[trader];
-        perpMarginBalances[trader][perpMargin] += amount;
         balanceInfo.lockedAmount += amount;
         balanceInfo.availableAmount -= amount;
     }
@@ -101,7 +138,6 @@ contract VariableVault is Ownable, ReentrancyGuard {
         require(msg.sender == perpMargin, "VariableVault: Unauthorized Access");
         require(amount > 0, "VariableVault: Invalid amount");
         BalanceInfo storage balanceInfo = balances[trader];
-        perpMarginBalances[trader][perpMargin] -= uint256(amount);
         balanceInfo.lockedAmount -= uint256(amount);
         balanceInfo.availableAmount += uint256(amount);
     }

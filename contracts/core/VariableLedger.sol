@@ -25,6 +25,11 @@ contract VariableLedger is Ownable, ReentrancyGuard {
     // mapping of user -> positionId -> position
     mapping(address => mapping(bytes32 => Position)) public traderPositions;
 
+    event UpdatedTraderPosition(
+        address indexed trader,
+        bytes32 indexed positionId,
+        uint256 marginAmount
+    );
     event OpenPosition(
         address indexed trader,
         uint256 baseAmount,
@@ -51,6 +56,24 @@ contract VariableLedger is Ownable, ReentrancyGuard {
         quoteToken = _quoteToken;
         variableVault = IVariableVault(_variableVault);
         interestRate = _interestRate;
+    }
+
+    function adjustPositionMargin(
+        address trader,
+        bytes32 positionId,
+        uint256 marginAmount
+    ) external {
+        require(
+            msg.sender == address(variableVault),
+            "VariableLedger: Unauthorized Access"
+        );
+        require(trader != address(0), "VariableLedger: Invalid trader address");
+
+        Position storage position = traderPositions[trader][positionId];
+        position.allocatedCollateral += marginAmount;
+
+        // Emit an event or perform any other necessary actions
+        emit UpdatedTraderPosition(trader, positionId, marginAmount);
     }
 
     function updateInterestRate(uint256 newRate) external onlyOwner {

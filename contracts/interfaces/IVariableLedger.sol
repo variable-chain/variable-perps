@@ -8,6 +8,12 @@ interface IVariableLedger {
 
     function traderCPF(address) external view returns (int256);
 
+    function adjustPositionMargin(
+        address trader,
+        bytes32 positionId,
+        uint256 marginAmount
+    ) external;
+
     function openPositionInVault(
         uint256 amount,
         uint256 leverageRatio,
