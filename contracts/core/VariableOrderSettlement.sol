@@ -94,41 +94,41 @@ contract VariableOrderSettlement is
                     );
 
                     // Update perpMarginBalance and balanceInfo for the buyer and seller
-                    if (buyOrder.isBuyerOpeningPosition) {
+                    if (buyOrder.isOpeningPosition) {
                         IVariableLedger(perpMarket).openPositionInVault(
                             matchedPositionSize,
                             buyOrder.leverageRatio,
                             buyOrder.buyer,
                             buyOrder.positionId,
-                            buyOrder.isBuyerLong
+                            buyOrder.isLong
                         );
                     } else {
                         IVariableLedger(perpMarket).closePositionInVault(
                             matchedPositionSize,
                             buyOrder.leverageRatio,
-                            buyOrder.buyerFundingFee,
+                            buyOrder.fundingFee,
                             buyOrder.buyer,
                             buyOrder.positionId,
-                            buyOrder.isBuyerLong
+                            buyOrder.isLong
                         );
                     }
 
-                    if (sellOrder.isSellerOpeningPosition) {
+                    if (sellOrder.isOpeningPosition) {
                         IVariableLedger(perpMarket).openPositionInVault(
                             matchedPositionSize,
                             sellOrder.leverageRatio,
                             sellOrder.seller,
                             sellOrder.positionId,
-                            sellOrder.isSellerLong
+                            sellOrder.isLong
                         );
                     } else {
                         IVariableLedger(perpMarket).closePositionInVault(
                             matchedPositionSize,
                             sellOrder.leverageRatio,
-                            sellOrder.sellerFundingFee,
+                            sellOrder.fundingFee,
                             sellOrder.seller,
                             sellOrder.positionId,
-                            sellOrder.isSellerLong
+                            sellOrder.isLong
                         );
                     }
 
@@ -168,41 +168,41 @@ contract VariableOrderSettlement is
                     );
 
                     // Update perpMarginBalance and balanceInfo for the buyer and seller
-                    if (buyOrder.isBuyerOpeningPosition) {
+                    if (buyOrder.isOpeningPosition) {
                         IVariableLedger(perpMarket).openPositionInVault(
                             matchedPositionSize,
                             buyOrder.leverageRatio,
                             buyOrder.buyer,
                             buyOrder.positionId,
-                            buyOrder.isBuyerLong
+                            buyOrder.isLong
                         );
                     } else {
                         IVariableLedger(perpMarket).closePositionInVault(
                             matchedPositionSize,
                             buyOrder.leverageRatio,
-                            buyOrder.buyerFundingFee,
+                            buyOrder.fundingFee,
                             buyOrder.buyer,
                             buyOrder.positionId,
-                            buyOrder.isBuyerLong
+                            buyOrder.isLong
                         );
                     }
 
-                    if (sellOrder.isSellerOpeningPosition) {
+                    if (sellOrder.isOpeningPosition) {
                         IVariableLedger(perpMarket).openPositionInVault(
                             matchedPositionSize,
                             sellOrder.leverageRatio,
                             sellOrder.seller,
                             sellOrder.positionId,
-                            sellOrder.isSellerLong
+                            sellOrder.isLong
                         );
                     } else {
                         IVariableLedger(perpMarket).closePositionInVault(
                             matchedPositionSize,
                             sellOrder.leverageRatio,
-                            sellOrder.sellerFundingFee,
+                            sellOrder.fundingFee,
                             sellOrder.seller,
                             sellOrder.positionId,
-                            sellOrder.isSellerLong
+                            sellOrder.isLong
                         );
                     }
 
