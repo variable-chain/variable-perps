@@ -58,7 +58,7 @@ contract VariableLedger is Ownable, ReentrancyGuard {
         interestRate = _interestRate;
     }
 
-    function adjustPositionMargin(
+    function adjustMarginPosition(
         address trader,
         bytes32 positionId,
         uint256 marginAmount
