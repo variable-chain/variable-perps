@@ -81,11 +81,6 @@ contract VariableLedger is Ownable, ReentrancyGuard {
         interestRate = newRate;
     }
 
-    function setDepositCap(
-        address token,
-        uint256 depositCap
-    ) external onlyOwner {}
-
     function setMaxCollateralTokensPerAccount(
         uint8 maxCollateralTokensPerAccount
     ) external onlyOwner {}
@@ -188,8 +183,6 @@ contract VariableLedger is Ownable, ReentrancyGuard {
         uint256 quoteAmount
     ) internal returns (uint256 bonus) {}
 
-    function updateCPF() public returns (int256 newLatestCPF) {}
-
     function getPosition(
         address trader,
         bytes32 positionId
@@ -213,10 +206,6 @@ contract VariableLedger is Ownable, ReentrancyGuard {
         //     position.baseSize + fundingFee,
         //     position.tradeSize
         // );
-    }
-
-    function getNewLatestCPF() external view returns (int256) {
-        return _getNewLatestCPF();
     }
 
     function canLiquidate(address trader) external view returns (bool) {}
