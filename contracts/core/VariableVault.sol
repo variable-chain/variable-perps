@@ -41,17 +41,28 @@ contract VariableVault is Ownable, ReentrancyGuard {
         uint256 marginAmount,
         bytes32 positionId
     ) external {
+        BalanceInfo storage balance = balances[msg.sender];
         require(perpMarket != address(0), "VariableLedger: Invalid Address");
         require(marginAmount != 0, "VariableLedger: Invalid Amount");
-        // Update the trader's position in the VariableLedger contract
-        BalanceInfo storage balance = balances[msg.sender];
-        balance.availableAmount -= marginAmount;
-        balance.lockedAmount += marginAmount;
-        IVariableLedger(perpMarket).adjustPositionMargin(
-            msg.sender,
-            positionId,
-            marginAmount
-        );
+        if (balance.availableAmount < marginAmount) {
+            depositUsdc(marginAmount - balance.availableAmount);
+            balance.availableAmount -= marginAmount;
+            balance.lockedAmount += marginAmount;
+            IVariableLedger(perpMarket).adjustMarginPosition(
+                msg.sender,
+                positionId,
+                marginAmount
+            );
+        } else {
+            // Update the trader's position in the VariableLedger contract
+            balance.availableAmount -= marginAmount;
+            balance.lockedAmount += marginAmount;
+            IVariableLedger(perpMarket).adjustMarginPosition(
+                msg.sender,
+                positionId,
+                marginAmount
+            );
+        }
     }
 
     function removeMargin(
@@ -65,7 +76,7 @@ contract VariableVault is Ownable, ReentrancyGuard {
         BalanceInfo storage balance = balances[msg.sender];
         balance.availableAmount += marginAmount;
         balance.lockedAmount -= marginAmount;
-        IVariableLedger(perpMarket).adjustPositionMargin(
+        IVariableLedger(perpMarket).adjustMarginPosition(
             msg.sender,
             positionId,
             marginAmount
@@ -86,7 +97,7 @@ contract VariableVault is Ownable, ReentrancyGuard {
     ) external onlyOwner {}
 
     // Deposit and Withdraw ERC-20 token
-    function depositUsdc(uint256 amount) external nonReentrant {
+    function depositUsdc(uint256 amount) public nonReentrant {
         BalanceInfo storage balanceInfo = balances[msg.sender];
         require(amount > 0, "VariableVault: Amount must be greater than 0");
 
