@@ -2,88 +2,98 @@
 pragma solidity =0.8.20;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
-import "../interfaces/IVariableLedger.sol";
-import "./VariableLedger.sol";
 import "../interfaces/IVariableVault.sol";
+import "../interfaces/IVariableController.sol";
 
 /**
  * @title VariableMarketRegistry
- * @dev This contract serves as a registry for VariableLedger contracts in a decentralized trading system.
- * It allows the creation and management of perpetual ledgers for different baseToken and quoteToken pairs.
+ * @dev This contract serves as a registry for Perpetual market in a decentralized trading system.
  */
 contract VariableMarketRegistry is Ownable {
     // Address of the VariableVault contract used in the trading system.
-    address public variableVault;
+    IVariableVault public variableVault;
 
-    // Mapping to store the deployed VariableLedger contracts for each baseToken and quoteToken pair.
-    mapping(address => mapping(address => address)) public getPerpLedger;
+    // Address of the VariableController contract used for controlling market registration.
+    IVariableController public variableController;
+
+    // Mapping to track active perpetual markets.
+    mapping(bytes32 => bool) public activePerpMarkets;
+
+    /**
+     * @dev Modifier to restrict functions to be callable only by the controller.
+     */
+    modifier onlyController() {
+        require(
+            msg.sender == address(variableController),
+            "VariableMarketRegistry: Not authorized"
+        );
+        _;
+    }
 
     /**
      * @dev Constructor to initialize the VariableMarketRegistry with the initial owner and VariableVault address.
      * @param _initialOwner The address of the initial owner of the contract.
      * @param _variableVault The address of the VariableVault contract to be used in the trading system.
+     * @param _variableController The address of the VariableController contract for controlling market registration.
      */
     constructor(
         address _initialOwner,
-        address _variableVault
+        address _variableVault,
+        address _variableController
     ) Ownable(_initialOwner) {
-        variableVault = _variableVault;
+        variableVault = IVariableVault(_variableVault);
+        variableController = IVariableController(_variableController);
     }
 
     /**
-     * @dev Updates the VariableVault address. Only callable by the owner.
+     * @dev Updates the VariableVault address. Only callable by the controller.
      * @param newVault The new address of the VariableVault contract.
      */
-    function updateVariableVault(address newVault) external onlyOwner {
+    function updateVariableVault(address newVault) external onlyController {
         require(
             newVault != address(0),
             "VariableMarketRegistry: Invalid address"
         );
-        variableVault = newVault;
+        variableVault = IVariableVault(newVault);
     }
 
     /**
-     * @dev Creates a new VariableLedger contract for a given baseToken and quoteToken pair.
-     * @param baseToken The address of the baseToken in the trading pair.
-     * @param quoteToken The address of the quoteToken in the trading pair.
-     * @return margin The address of the newly created VariableLedger contract.
+     * @dev Updates the VariableController address. Only callable by the controller.
+     * @param newController The new address of the VariableController contract.
      */
-    function createPerpLedger(
-        address baseToken,
-        address quoteToken,
-        uint256 interestRate
-    ) external returns (address margin) {
-        // Ensure baseToken and quoteToken are different and not zero addresses.
+    function updateVariableController(
+        address newController
+    ) external onlyController {
         require(
-            baseToken != quoteToken,
-            "VariableMarketRegistry: Identical addresses"
+            newController != address(0),
+            "VariableMarketRegistry: Invalid address"
         );
+        variableController = IVariableController(newController);
+    }
+
+    /**
+     * @dev Register a new Perpetual market.
+     * @param perpMarketId Unique perpetual market Id.
+     */
+    function registerPerpMarket(bytes32 perpMarketId) external onlyController {
         require(
-            baseToken != address(0) && quoteToken != address(0),
-            "VariableMarketRegistry: Invalid Address"
+            perpMarketId != bytes32(0),
+            "VariableMarketRegistry: Invalid perpMarketId"
         );
+        activePerpMarkets[perpMarketId] = true;
+    }
 
-        // Ensure no existing contract for the given pair.
+    /**
+     * @dev Deregister a Perpetual market.
+     * @param perpMarketId Unique perpetual market Id.
+     */
+    function deRegisterPerpMarket(
+        bytes32 perpMarketId
+    ) external onlyController {
         require(
-            getPerpLedger[baseToken][quoteToken] == address(0),
-            "VariableMarketRegistry: Contract exists"
+            perpMarketId != bytes32(0),
+            "VariableMarketRegistry: Invalid perpMarketId"
         );
-
-        // Generate a salt using the keccak256 hash of the pair's baseToken and quoteToken.
-        bytes32 salt = keccak256(abi.encodePacked(baseToken, quoteToken));
-
-        // Deploy a new VariableLedger contract with the calculated salt.
-        margin = address(
-            new VariableLedger{salt: salt}(
-                owner(),
-                baseToken,
-                quoteToken,
-                variableVault,
-                interestRate
-            )
-        );
-
-        // Update the mapping with the deployed contract address.
-        getPerpLedger[baseToken][quoteToken] = margin;
+        activePerpMarkets[perpMarketId] = false;
     }
 }
