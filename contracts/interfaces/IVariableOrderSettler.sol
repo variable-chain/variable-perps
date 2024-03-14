@@ -2,36 +2,22 @@
 pragma solidity =0.8.20;
 
 /**
- * @title IVariableOrderSettlement
- * @dev Interface for the VariableOrderSettlement contract.
+ * @title IVariableOrderSettler
+ * @dev Interface for the VariableOrderSettler contract.
  */
-interface IVariableOrderSettlement {
+interface IVariableOrderSettler {
     // Order struct
     struct OrderStruct {
-        bool isOpeningPosition;
-        bool isLong;
         bool isTaker;
-        address baseToken;
-        address quoteToken;
-        address buyer;
-        address seller;
+        bool isOpeningPosition;
+        address trader;
+        bytes32 referralCode;
+        bytes32 positionId;
+        bytes32 perpMarketId;
         uint256 entryPrice;
         uint256 positionSize;
         uint256 leverageRatio;
         int256 fundingFee;
-        OrderType orderType;
-        bytes32 referralCode;
-        bytes32 positionId;
-    }
-
-    enum OrderType {
-        LIMIT_ORDER,
-        MARKET_ORDER,
-        STOP_MARKET,
-        STOP_LIMIT,
-        TRAILING_STOP,
-        TAKE_PROFIT,
-        TAKE_PROFIT_LIMIT
     }
 
     /**
