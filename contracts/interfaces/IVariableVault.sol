@@ -17,17 +17,9 @@ interface IVariableVault {
 
     function withdraw(uint256 amount) external;
 
-    function openMarginPosition(
-        uint256 amount,
-        address trader,
-        address perpMargin
-    ) external;
+    function openMarginPosition(uint256 amount, address trader) external;
 
-    function closeMarginPosition(
-        int256 amount,
-        address trader,
-        address perpMargin
-    ) external;
+    function closeMarginPosition(uint256 amount, address trader) external;
 
     function withdrawRemainingBalance() external;
 
