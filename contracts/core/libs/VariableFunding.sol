@@ -3,6 +3,7 @@ pragma solidity =0.8.20;
 
 library VariableFundingLibrary {
     uint256 private constant DECIMALS = 18;
+    uint32 constant FUNDING_PERIOD = 3600 * 8;
 
     function calculateFundingRate(
         uint256 perpPrice,

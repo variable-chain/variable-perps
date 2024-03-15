@@ -12,10 +12,6 @@ contract VariableFunding {
     uint256 private constant TIME_FACTOR = 3300;
 
     // State variables
-    uint256 public perpPrice;
-    uint256 public spotPrice;
-    uint256 public averagePrice;
-    uint256 public leverageFactor;
     uint256 public interestRate;
     uint256 public timeFactor;
 
@@ -24,15 +20,24 @@ contract VariableFunding {
         uint256 fundingRate;
     }
     // mapping of perp market to funding rate data
-    mapping(address => FundingRateData[24]) public fundingRateHistory;
+    mapping(bytes32 => FundingRateData[24]) public fundingRateHistory;
 
     event FundingRateCalculated(uint256 fundingRate);
 
     // Calculate Funding Rate
     function calculateFundingRate(
-        address quoteToken,
-        address baseToken
+        bytes32 perpMarketId,
+        uint256 perpPrice,
+        uint256 spotPrice,
+        uint256 averagePrice,
+        uint256 leverageFactor
     ) external returns (uint256) {
+        require(
+            IVariableMarketRegistry(variableMarketRegistry).activePerpMarkets(
+                perpMarketId
+            ),
+            "VariableFunding: Inactive market"
+        );
         uint256 fundingRate = VariableFundingLibrary.calculateFundingRate(
             perpPrice,
             spotPrice,
@@ -43,24 +48,13 @@ contract VariableFunding {
         );
 
         // add the funding rate in the history
-        addFundingRate(fundingRate, quoteToken, baseToken);
+        addFundingRate(fundingRate, perpMarketId);
 
         return fundingRate;
     }
 
     // Set values for the variables
-    function setValues(
-        uint256 _perpPrice,
-        uint256 _spotPrice,
-        uint256 _averagePrice,
-        uint256 _leverageFactor,
-        uint256 _interestRate,
-        uint256 _timeFactor
-    ) external {
-        perpPrice = _perpPrice;
-        spotPrice = _spotPrice;
-        averagePrice = _averagePrice;
-        leverageFactor = _leverageFactor;
+    function setValues(uint256 _interestRate, uint256 _timeFactor) external {
         interestRate = _interestRate;
         timeFactor = _timeFactor;
     }
@@ -68,24 +62,13 @@ contract VariableFunding {
     // Add funding rate in history
     function addFundingRate(
         uint256 _fundingRate,
-        address _quoteToken,
-        address _baseToken
+        bytes32 perpMarketId
     ) internal {
-        address perpMarket = getMarketPair(_quoteToken, _baseToken);
+        uint256 index = fundingRateHistory[perpMarketId].length % 24;
 
-        uint256 index = fundingRateHistory[perpMarket].length % 24;
-
-        fundingRateHistory[perpMarket][index] = FundingRateData(
+        fundingRateHistory[perpMarketId][index] = FundingRateData(
             block.timestamp,
             _fundingRate
         );
-    }
-
-    function getMarketPair(
-        address quoteToken,
-        address baseToken
-    ) internal view returns (address perpMarket) {
-        perpMarket = IVariableMarketRegistry(variableMarketRegistry)
-            .getPerpLedger(baseToken, quoteToken);
     }
 }

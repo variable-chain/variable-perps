@@ -3,7 +3,6 @@ pragma solidity =0.8.20;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
-import "../interfaces/IVariableLedger.sol";
 import "../interfaces/IVariableVault.sol";
 import "../interfaces/IVariableMarketRegistry.sol";
 import "../interfaces/IVariableOrderSettler.sol";
