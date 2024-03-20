@@ -46,40 +46,10 @@ contract VariableMarketRegistry is Ownable {
     }
 
     /**
-     * @dev Updates the VariableVault address. Only callable by the controller.
-     * @param newVault The new address of the VariableVault contract.
-     */
-    function updateVariableVault(address newVault) external onlyController {
-        require(
-            newVault != address(0),
-            "VariableMarketRegistry: Invalid address"
-        );
-        variableVault = IVariableVault(newVault);
-    }
-
-    /**
-     * @dev Updates the VariableController address. Only callable by the controller.
-     * @param newController The new address of the VariableController contract.
-     */
-    function updateVariableController(
-        address newController
-    ) external onlyController {
-        require(
-            newController != address(0),
-            "VariableMarketRegistry: Invalid address"
-        );
-        variableController = IVariableController(newController);
-    }
-
-    /**
      * @dev Register a new Perpetual market.
      * @param perpMarketId Unique perpetual market Id.
      */
     function registerPerpMarket(bytes32 perpMarketId) external onlyController {
-        require(
-            perpMarketId != bytes32(0),
-            "VariableMarketRegistry: Invalid perpMarketId"
-        );
         activePerpMarkets[perpMarketId] = true;
     }
 
@@ -90,10 +60,6 @@ contract VariableMarketRegistry is Ownable {
     function deRegisterPerpMarket(
         bytes32 perpMarketId
     ) external onlyController {
-        require(
-            perpMarketId != bytes32(0),
-            "VariableMarketRegistry: Invalid perpMarketId"
-        );
         activePerpMarkets[perpMarketId] = false;
     }
 }

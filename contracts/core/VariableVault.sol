@@ -81,10 +81,9 @@ contract VariableVault is Ownable, ReentrancyGuard {
      * @dev Updates the VariableController address. Only callable by the owner.
      * @param newController The new address of the VariableController contract.
      */
-    function updateVariableController(
+    function updateVaultController(
         address newController
     ) external onlyController {
-        require(newController != address(0), "VariableVault: Invalid address");
         variableController = IVariableController(newController);
     }
 
@@ -104,7 +103,6 @@ contract VariableVault is Ownable, ReentrancyGuard {
      * @param newCap The new withdraw cap amount.
      */
     function updateWithdrawCap(uint256 newCap) external onlyController {
-        require(newCap != 0, "VariableVault: Invalid withdrawal amount");
         withdrawCap = newCap;
     }
 

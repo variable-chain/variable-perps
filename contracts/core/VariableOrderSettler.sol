@@ -62,10 +62,6 @@ contract VariableOrderSettler is
     function updateVariableController(
         address newController
     ) external onlyController {
-        require(
-            newController != address(0),
-            "VariableOrderSettlement: Invalid address"
-        );
         variableController = IVariableController(newController);
     }
 
@@ -76,10 +72,6 @@ contract VariableOrderSettler is
     function updateVariableMarketRegistry(
         address newMarketRegistry
     ) external onlyController {
-        require(
-            newMarketRegistry != address(0),
-            "VariableOrderSettlement: Invalid address"
-        );
         variableMarketRegistry = IVariableMarketRegistry(newMarketRegistry);
     }
 
@@ -90,10 +82,6 @@ contract VariableOrderSettler is
     function updateVariableVault(
         address newVariableVault
     ) external onlyController {
-        require(
-            newVariableVault != address(0),
-            "VariableOrderSettlement: Invalid address"
-        );
         variableVault = IVariableVault(newVariableVault);
     }
 
