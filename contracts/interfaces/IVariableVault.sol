@@ -13,6 +13,16 @@ interface IVariableVault {
         address
     ) external view returns (uint256);
 
+    function updateWithdrawCap(uint256 newCap) external;
+
+    function updateVaultController(
+        address newController
+    ) external;
+
+    function updateVariableOrderSettler(
+        address newSettler
+    ) external;
+
     function depositUsdc(uint256 amount) external;
 
     function withdraw(uint256 amount) external;

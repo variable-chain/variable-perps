@@ -26,6 +26,14 @@ interface IVariableOrderSettler {
      */
     function updateVariableMarketRegistry(address newMarketRegistry) external;
 
+    function updateVariableController(
+        address newController
+    ) external;
+
+     function updateVariableVault(
+        address newVariableVault
+    ) external;
+
     /**
      * @dev Function to match buy and sell orders and settle them.
      * @param buyOrders Array of buy orders.
