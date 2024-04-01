@@ -20,12 +20,8 @@ contract VariableVault is Ownable, ReentrancyGuard {
 
     IVariableOrderSettler public variableOrderSettler;
 
-    struct BalanceInfo {
-        uint256 availableAmount;
-        uint256 lockedAmount;
-    }
-
-    mapping(address => BalanceInfo) public balances;
+    // trader -> amount
+    mapping(address => uint256) public balances;
 
     event Deposit(address indexed user, address indexed token, uint256 amount);
     event Withdrawal(
@@ -110,39 +106,33 @@ contract VariableVault is Ownable, ReentrancyGuard {
      * @dev Deposits USDC tokens into the vault.
      * @param amount The amount of USDC tokens to deposit.
      */
-    function depositUsdc(uint256 amount) public nonReentrant {
-        BalanceInfo storage balanceInfo = balances[msg.sender];
-        require(amount > 0, "VariableVault: Amount must be greater than 0");
-
+    function depositUsdc(uint256 amount) external nonReentrant {
         IERC20 token = IERC20(usdcToken);
+        require(amount > 0, "VariableVault: Amount must be greater than 0");
         require(
             token.transferFrom(msg.sender, address(this), amount),
             "VariableVault: Token transfer failed"
         );
-
-        balanceInfo.availableAmount += amount;
+        balances[msg.sender] += amount;
         emit Deposit(msg.sender, usdcToken, amount);
     }
-
+    // TODO: need to check open position before withdraw
     /**
      * @dev Withdraws USDC tokens from the vault.
      * @param amount The amount of USDC tokens to withdraw.
      */
-    function withdraw(uint256 amount) external nonReentrant {
+    function withdraw(
+        address trader,
+        uint256 amount
+    ) external nonReentrant onlyController {
+        require(amount > 0, "VariableVault: Amount must be greater than 0");
         require(amount <= withdrawCap, "VariableVault: Cap exceeded");
-        BalanceInfo storage balanceInfo = balances[msg.sender];
         require(
-            amount > 0 && amount <= balanceInfo.availableAmount,
-            "VariableVault: Invalid withdrawal amount"
-        );
-
-        require(
-            IERC20(usdcToken).transfer(msg.sender, amount),
+            IERC20(usdcToken).transfer(trader, amount),
             "VariableVault: Token transfer failed"
         );
-        balanceInfo.availableAmount -= amount;
-
-        emit Withdrawal(msg.sender, usdcToken, amount);
+        balances[trader] -= amount;
+        emit Withdrawal(trader, usdcToken, amount);
     }
 
     /**
@@ -153,11 +143,9 @@ contract VariableVault is Ownable, ReentrancyGuard {
     function openMarginPosition(
         uint256 amount,
         address trader
+
     ) external onlyOrderSettler {
         require(amount > 0, "VariableVault: Invalid amount");
-        BalanceInfo storage balanceInfo = balances[trader];
-        balanceInfo.lockedAmount += amount;
-        balanceInfo.availableAmount -= amount;
     }
 
     /**
@@ -170,9 +158,6 @@ contract VariableVault is Ownable, ReentrancyGuard {
         address trader
     ) external onlyOrderSettler {
         require(amount > 0, "VariableVault: Invalid amount");
-        BalanceInfo storage balanceInfo = balances[trader];
-        balanceInfo.lockedAmount -= amount;
-        balanceInfo.availableAmount += amount;
     }
 
     /**
