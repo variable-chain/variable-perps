@@ -11,6 +11,10 @@ import "../interfaces/IVariableFeeDistributor.sol";
 
 import "../interfaces/IVariableFeeManager.sol";
 
+import "../interfaces/IVariableReferral.sol";
+
+import "../interfaces/IVariablePositionManager.sol";
+
 /**
  * @title VariableOrderSettler
  * @dev Smart contract for settling matched orders between buyers and sellers in a decentralized trading system.
@@ -31,6 +35,10 @@ contract VariableOrderSettler is
 
     IVariableFeeManager public variableFeeManager;
 
+    IVariableReferral public variableReferral;
+
+    IVariablePositionManager public variablePositionManager;
+
     /**
      * @dev Modifier to restrict functions to be callable only by the controller.
      */
@@ -50,6 +58,7 @@ contract VariableOrderSettler is
      * @param _variableController The address of the Variable Controller contract.
      * @param _variableFeeDistributor the address of the variable fee distributor
      * @param _variableFeeManager the address of variable fee manager
+     *
      */
     constructor(
         address _initialOwner,
@@ -57,7 +66,8 @@ contract VariableOrderSettler is
         address _variableVault,
         address _variableController,
         address _variableFeeDistributor,
-        address _variableFeeManager
+        address _variableFeeManager,
+        address _variablePositionManager
     ) Ownable(_initialOwner) {
         variableMarketRegistry = IVariableMarketRegistry(
             _variableMarketRegistry
@@ -68,6 +78,9 @@ contract VariableOrderSettler is
             _variableFeeDistributor
         );
         variableFeeManager = IVariableFeeManager(_variableFeeManager);
+        variablePositionManager = IVariablePositionManager(
+            _variablePositionManager
+        );
     }
 
     /**
@@ -88,6 +101,18 @@ contract VariableOrderSettler is
         address newFeeManager
     ) external onlyController {
         variableFeeManager = IVariableFeeManager(newFeeManager);
+    }
+
+    function updateVariablePositionManager(
+        address newPositionManager
+    ) external onlyController {
+        variablePositionManager = IVariablePositionManager(newPositionManager);
+    }
+
+    function updateVariableReferral(
+        address newReferral
+    ) external onlyController {
+        variableReferral = IVariableReferral(newReferral);
     }
 
     /**
@@ -175,30 +200,22 @@ contract VariableOrderSettler is
             .calculateFees(buyOrder.isLiquidation, buyOrder.positionSize);
         uint256 sellerFees = IVariableFeeManager(variableFeeManager)
             .calculateFees(sellOrder.isLiquidation, sellOrder.positionSize);
-        if (buyOrder.isOpeningPosition) {
-            IVariableVault(variableVault).openMarginPosition(
-                buyerCollateral + buyerFees,
-                buyOrder.trader
-            );
-        } else {
-            // TODO: need to handle liquidation logic here for closing position
-            IVariableVault(variableVault).closeMarginPosition(
-                buyerCollateral - buyerFees,
-                buyOrder.trader
-            );
-        }
-
-        if (sellOrder.isOpeningPosition) {
-            IVariableVault(variableVault).openMarginPosition(
-                sellerCollateral + sellerFees,
-                sellOrder.trader
-            );
-        } else {
-            IVariableVault(variableVault).closeMarginPosition(
-                sellerCollateral - sellerFees,
-                sellOrder.trader
-            );
-        }
+        IVariablePositionManager(variablePositionManager).updatePosition(
+            buyOrder.perpMarketId,
+            buyOrder.positionId,
+            buyOrder.trader,
+            buyOrder.positionSize,
+            buyOrder.leverageRatio,
+            buyerFees
+        );
+        IVariablePositionManager(variablePositionManager).updatePosition(
+            sellOrder.perpMarketId,
+            sellOrder.positionId,
+            sellOrder.trader,
+            sellOrder.positionSize,
+            sellOrder.leverageRatio,
+            sellerFees
+        );
     }
 
     function partialFulfillment(
@@ -224,30 +241,22 @@ contract VariableOrderSettler is
                     takerOrder.isLiquidation,
                     takerOrder.positionSize
                 );
-
-            if (makerOrder.isOpeningPosition) {
-                IVariableVault(variableVault).openMarginPosition(
-                    buyerCollateral + buyerFees,
-                    makerOrder.trader
-                );
-            } else {
-                IVariableVault(variableVault).closeMarginPosition(
-                    buyerCollateral - buyerFees,
-                    makerOrder.trader
-                );
-            }
-
-            if (takerOrder.isOpeningPosition) {
-                IVariableVault(variableVault).openMarginPosition(
-                    sellerCollateral + sellerFees,
-                    takerOrder.trader
-                );
-            } else {
-                IVariableVault(variableVault).closeMarginPosition(
-                    sellerCollateral - sellerFees,
-                    takerOrder.trader
-                );
-            }
+            IVariablePositionManager(variablePositionManager).updatePosition(
+                makerOrder.perpMarketId,
+                makerOrder.positionId,
+                makerOrder.trader,
+                makerOrder.positionSize,
+                makerOrder.leverageRatio,
+                buyerFees
+            );
+            IVariablePositionManager(variablePositionManager).updatePosition(
+                takerOrder.perpMarketId,
+                takerOrder.positionId,
+                takerOrder.trader,
+                takerOrder.positionSize,
+                takerOrder.leverageRatio,
+                sellerFees
+            );
 
             takerOrder.positionSize -= makerOrder.positionSize;
         }
