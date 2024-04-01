@@ -9,7 +9,6 @@ interface IVariableOrderSettler {
     // Order struct
     struct OrderStruct {
         bool isTaker;
-        bool isOpeningPosition;
         bool isLiquidation;
         address trader;
         bytes32 referralCode;
@@ -27,13 +26,11 @@ interface IVariableOrderSettler {
      */
     function updateVariableMarketRegistry(address newMarketRegistry) external;
 
-    function updateVariableController(
-        address newController
-    ) external;
+    function updateVariableController(address newController) external;
 
-     function updateVariableVault(
-        address newVariableVault
-    ) external;
+    function updateVariableVault(address newVariableVault) external;
+
+    function updateVariableReferral(address variableReferral) external;
 
     /**
      * @dev Function to match buy and sell orders and settle them.

@@ -11,7 +11,7 @@ import "../interfaces/IVariableVault.sol";
 
 import "../interfaces/IVariableController.sol";
 
-contract VariableController is Ownable, IVariableController {
+contract VariableController is Ownable, IVariableController, ReentrancyGuard {
     IVariableVault public variableVault;
 
     IVariableOrderSettler public variableOrderSettler;
@@ -96,6 +96,16 @@ contract VariableController is Ownable, IVariableController {
     ) external override onlyOwner {
         require(newSettler != address(0), "VariableVault: Invalid address");
         IVariableVault(variableVault).updateVariableOrderSettler(newSettler);
+    }
+
+    function updateVariableReferral(address variableReferral) external {
+        require(
+            variableReferral != address(0),
+            "VariableVault: Invalid address"
+        );
+        IVariableOrderSettler(variableReferral).updateVariableReferral(
+            variableReferral
+        );
     }
 
     function withdrawRemainingBalance() external override onlyOwner {

@@ -23,9 +23,9 @@ interface IVariableVault {
         address newSettler
     ) external;
 
-    function depositUsdc(uint256 amount) external;
+    function depositUsdc(address trader, uint256 amount) external;
 
-    function withdraw(uint256 amount) external;
+    function withdraw(address trader, uint256 amount) external;
 
     function openMarginPosition(uint256 amount, address trader) external;
 
