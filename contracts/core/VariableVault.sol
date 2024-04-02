@@ -135,6 +135,10 @@ contract VariableVault is Ownable, ReentrancyGuard {
         emit Withdrawal(trader, usdcToken, amount);
     }
 
+    function increaseMargin(uint256 amount) external {}
+
+    function decreaseMArgin(uint256 amount) external {}
+
     /**
      * @dev Opens a margin position for a trader.
      * @param amount The amount of USDC tokens to lock.
@@ -143,7 +147,6 @@ contract VariableVault is Ownable, ReentrancyGuard {
     function openMarginPosition(
         uint256 amount,
         address trader
-
     ) external onlyOrderSettler {
         require(amount > 0, "VariableVault: Invalid amount");
     }
