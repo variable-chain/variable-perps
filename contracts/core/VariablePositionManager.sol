@@ -6,17 +6,26 @@ import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import "../interfaces/IVariableController.sol";
 import "../interfaces/IVariableOrderSettler.sol";
 
+/**
+ * @title VariablePositionManager
+ * @dev A contract for managing variable positions in a financial system.
+ *      This contract allows for the management of positions, including adjusting margins,
+ *      updating positions, and calculating total open position collateral.
+ */
 contract VariablePositionManager is Ownable, ReentrancyGuard {
     struct PositionDetail {
         bytes32 perpMarketId;
         uint256 positionSize;
         uint256 leverageRatio;
+        uint256 allocatedCollateral;
         uint256 fees;
     }
-    IVariableOrderSettler public variableOrderSettler;
 
+    // Instance variables for external contracts
+    IVariableOrderSettler public variableOrderSettler;
     IVariableController public variableController;
 
+    // Mapping to store position details
     // trader -> positionId -> positionDetail
     mapping(address => mapping(bytes32 => PositionDetail))
         public positionManager;
@@ -42,6 +51,13 @@ contract VariablePositionManager is Ownable, ReentrancyGuard {
         );
         _;
     }
+
+    /**
+     * @dev Constructor to initialize the contract with the provided addresses.
+     * @param _intialOwner The initial owner of the contract.
+     * @param _variableController The address of the VariableController contract.
+     * @param _variableOrderSettler The address of the VariableOrderSettler contract.
+     */
     constructor(
         address _intialOwner,
         address _variableController,
@@ -51,6 +67,10 @@ contract VariablePositionManager is Ownable, ReentrancyGuard {
         variableOrderSettler = IVariableOrderSettler(_variableOrderSettler);
     }
 
+    /**
+     * @dev Function to update the address of the VariableOrderSettler contract.
+     * @param newSettler The new address of the VariableOrderSettler contract.
+     */
     function updateVariableOrderSettler(
         address newSettler
     ) external onlyController {
@@ -58,16 +78,31 @@ contract VariablePositionManager is Ownable, ReentrancyGuard {
         variableOrderSettler = IVariableOrderSettler(newSettler);
     }
 
+    /**
+     * @dev Function to update the address of the VariableController contract.
+     * @param newController The new address of the VariableController contract.
+     */
     function updatePositionController(
         address newController
     ) external onlyController {
         variableController = IVariableController(newController);
     }
 
+    /**
+     * @dev Function to update a position with new details.
+     * @param perpMarketId The identifier of the perpetual market associated with the position.
+     * @param positionId The unique identifier of the position.
+     * @param trader The address of the trader owning the position.
+     * @param allocatedCollateral The amount of collateral allocated to the position.
+     * @param positionSize The size of the position.
+     * @param leverageRatio The leverage ratio of the position.
+     * @param fees The fees associated with the position.
+     */
     function updatePosition(
         bytes32 perpMarketId,
         bytes32 positionId,
         address trader,
+        uint256 allocatedCollateral,
         uint256 positionSize,
         uint256 leverageRatio,
         uint256 fees
@@ -76,9 +111,46 @@ contract VariablePositionManager is Ownable, ReentrancyGuard {
         position.perpMarketId = perpMarketId;
         position.positionSize = positionSize;
         position.leverageRatio = leverageRatio;
+        position.allocatedCollateral = allocatedCollateral;
         position.fees = fees;
     }
 
+    /**
+     * @dev Function to adjust the margin of a position.
+     * @param perpId The identifier of the perpetual market associated with the position.
+     * @param positionId The unique identifier of the position.
+     * @param amount The amount by which to adjust the margin.
+     * @param trader The address of the trader owning the position.
+     * @param increase A boolean indicating whether to increase or decrease the margin.
+     */
+    function adjustMargin(
+        bytes32 perpId,
+        bytes32 positionId,
+        uint256 amount,
+        address trader,
+        bool increase
+    ) external {
+        // TODO: validation checks & caller 
+        // Ensure the position exists
+        require(
+            positionManager[trader][positionId].perpMarketId == perpId,
+            "Position not found"
+        );
+        if (increase) {
+            // Increase allocated collateral
+            positionManager[trader][positionId].allocatedCollateral += amount;
+        } else {
+            // Decrease allocated collateral
+            positionManager[trader][positionId].allocatedCollateral -= amount;
+        }
+    }
+
+    /**
+     * @dev Function to calculate the total open position collateral for a trader.
+     * @param trader The address of the trader.
+     * @param positionIds An array of position identifiers.
+     * @return totalCollateral The total collateral of the trader's open positions.
+     */
     function calculateTotalOpenPositionCollateral(
         address trader,
         bytes32[] memory positionIds
