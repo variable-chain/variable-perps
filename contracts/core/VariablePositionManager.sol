@@ -99,6 +99,7 @@ contract VariablePositionManager is Ownable, ReentrancyGuard {
      * @param fees The fees associated with the position.
      */
     function updatePosition(
+        bool isAddposition,
         bytes32 perpMarketId,
         bytes32 positionId,
         address trader,
@@ -109,32 +110,38 @@ contract VariablePositionManager is Ownable, ReentrancyGuard {
     ) external onlyOrderSettler {
         PositionDetail storage position = positionManager[trader][positionId];
         position.perpMarketId = perpMarketId;
-        position.positionSize = positionSize;
         position.leverageRatio = leverageRatio;
-        position.allocatedCollateral = allocatedCollateral;
-        position.fees = fees;
+        position.fees += fees;
+
+        if (isAddposition) {
+            position.positionSize += positionSize;
+
+            position.allocatedCollateral += allocatedCollateral;
+        } else {
+            position.positionSize -= positionSize;
+
+            position.allocatedCollateral -= allocatedCollateral;
+        }
     }
 
     /**
      * @dev Function to adjust the margin of a position.
-     * @param perpId The identifier of the perpetual market associated with the position.
      * @param positionId The unique identifier of the position.
      * @param amount The amount by which to adjust the margin.
      * @param trader The address of the trader owning the position.
      * @param increase A boolean indicating whether to increase or decrease the margin.
      */
     function adjustMargin(
-        bytes32 perpId,
         bytes32 positionId,
         uint256 amount,
         address trader,
         bool increase
     ) external {
-        // TODO: validation checks & caller 
+        // TODO: validation checks & caller
         // Ensure the position exists
         require(
-            positionManager[trader][positionId].perpMarketId == perpId,
-            "Position not found"
+            positionManager[trader][positionId].positionSize > 0,
+            "Position does not exist"
         );
         if (increase) {
             // Increase allocated collateral

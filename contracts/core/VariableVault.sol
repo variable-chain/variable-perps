@@ -7,6 +7,8 @@ import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import "../interfaces/IVariableController.sol";
 import "../interfaces/IVariableOrderSettler.sol";
 
+import "../interfaces/IVariablePositionManager.sol";
+
 /**
  * @title VariableVault
  * @dev Smart contract for managing user balances and margin positions in a decentralized trading system.
@@ -19,6 +21,8 @@ contract VariableVault is Ownable, ReentrancyGuard {
     IVariableController public variableController;
 
     IVariableOrderSettler public variableOrderSettler;
+
+    IVariablePositionManager public variablePositionManager;
 
     // trader -> amount
     mapping(address => uint256) public balances;
@@ -65,12 +69,16 @@ contract VariableVault is Ownable, ReentrancyGuard {
         address _usdcToken,
         address _variableController,
         address _variableOrderSettler,
+        address _variablePositionManager,
         uint256 _withdrawCap
     ) Ownable(_initialOwner) {
         usdcToken = _usdcToken;
         withdrawCap = _withdrawCap;
         variableController = IVariableController(_variableController);
         variableOrderSettler = IVariableOrderSettler(_variableOrderSettler);
+        variablePositionManager = IVariablePositionManager(
+            _variablePositionManager
+        );
     }
 
     /**
@@ -134,10 +142,6 @@ contract VariableVault is Ownable, ReentrancyGuard {
         balances[trader] -= amount;
         emit Withdrawal(trader, usdcToken, amount);
     }
-
-    function increaseMargin(uint256 amount) external {}
-
-    function decreaseMArgin(uint256 amount) external {}
 
     /**
      * @dev Opens a margin position for a trader.

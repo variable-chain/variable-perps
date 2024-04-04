@@ -10,6 +10,7 @@ interface IVariableOrderSettler {
     struct OrderStruct {
         bool isTaker;
         bool isLiquidation;
+        bool isAddPosition;
         address trader;
         bytes32 referralCode;
         bytes32 positionId;
