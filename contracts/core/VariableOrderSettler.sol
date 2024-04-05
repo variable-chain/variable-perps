@@ -201,7 +201,7 @@ contract VariableOrderSettler is
         uint256 sellerFees = IVariableFeeManager(variableFeeManager)
             .calculateFees(sellOrder.isLiquidation, sellOrder.positionSize);
         IVariablePositionManager(variablePositionManager).updatePosition(
-            buyOrder.isAddPosition,
+            buyOrder.isIncreaseMargin,
             buyOrder.perpMarketId,
             buyOrder.positionId,
             buyOrder.trader,
@@ -211,7 +211,7 @@ contract VariableOrderSettler is
             buyerFees
         );
         IVariablePositionManager(variablePositionManager).updatePosition(
-            sellOrder.isAddPosition,
+            sellOrder.isIncreaseMargin,
             sellOrder.perpMarketId,
             sellOrder.positionId,
             sellOrder.trader,
@@ -246,7 +246,7 @@ contract VariableOrderSettler is
                     takerOrder.positionSize
                 );
             IVariablePositionManager(variablePositionManager).updatePosition(
-                makerOrder.isAddPosition,
+                makerOrder.isIncreaseMargin,
                 makerOrder.perpMarketId,
                 makerOrder.positionId,
                 makerOrder.trader,
@@ -256,7 +256,7 @@ contract VariableOrderSettler is
                 buyerFees
             );
             IVariablePositionManager(variablePositionManager).updatePosition(
-                takerOrder.isAddPosition,
+                takerOrder.isIncreaseMargin,
                 takerOrder.perpMarketId,
                 takerOrder.positionId,
                 takerOrder.trader,

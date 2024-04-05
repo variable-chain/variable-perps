@@ -99,7 +99,7 @@ contract VariablePositionManager is Ownable, ReentrancyGuard {
      * @param fees The fees associated with the position.
      */
     function updatePosition(
-        bool isAddposition,
+        bool isIncreaseMargin,
         bytes32 perpMarketId,
         bytes32 positionId,
         address trader,
@@ -113,7 +113,7 @@ contract VariablePositionManager is Ownable, ReentrancyGuard {
         position.leverageRatio = leverageRatio;
         position.fees += fees;
 
-        if (isAddposition) {
+        if (isIncreaseMargin) {
             position.positionSize += positionSize;
 
             position.allocatedCollateral += allocatedCollateral;
