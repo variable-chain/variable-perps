@@ -15,7 +15,6 @@ import "../interfaces/IVariablePositionManager.sol";
  */
 contract VariableVault is Ownable, ReentrancyGuard {
     uint256 public withdrawCap;
-    address public immutable usdcToken;
 
     // Address of the VariableController contract used for controlling market registration.
     IVariableController public variableController;
@@ -24,13 +23,21 @@ contract VariableVault is Ownable, ReentrancyGuard {
 
     IVariablePositionManager public variablePositionManager;
 
-    // trader -> amount
-    mapping(address => uint256) public balances;
+    // trader -> bytes32(name) -> amount
+    mapping(address => mapping(bytes32 => uint256)) public balances;
 
-    event Deposit(address indexed user, address indexed token, uint256 amount);
+    mapping(bytes32 => address) public whitelistedTokens;
+
+    event Deposit(address indexed user, bytes32 indexed token, uint256 amount);
     event Withdrawal(
         address indexed user,
+        bytes32 indexed token,
+        uint256 amount
+    );
+    event TokenWithdrawnByOwner(
+        bytes32 indexed name,
         address indexed token,
+        address to,
         uint256 amount
     );
 
@@ -59,26 +66,39 @@ contract VariableVault is Ownable, ReentrancyGuard {
     /**
      * @dev Constructor to initialize the contract.
      * @param _initialOwner The initial owner of the contract.
-     * @param _usdcToken The address of the USDC token contract.
      * @param _variableController The address of the VariableController contract.
      * @param _variableOrderSettler The address of the VariableOrderSettler contract.
      * @param _withdrawCap The maximum withdrawal amount allowed.
      */
     constructor(
         address _initialOwner,
-        address _usdcToken,
         address _variableController,
         address _variableOrderSettler,
         address _variablePositionManager,
         uint256 _withdrawCap
     ) Ownable(_initialOwner) {
-        usdcToken = _usdcToken;
         withdrawCap = _withdrawCap;
         variableController = IVariableController(_variableController);
         variableOrderSettler = IVariableOrderSettler(_variableOrderSettler);
         variablePositionManager = IVariablePositionManager(
             _variablePositionManager
         );
+    }
+
+    // Function to update the address for a given token key
+    function updateWhitelistedToken(
+        bytes32 tokenKey,
+        address tokenAddress
+    ) public onlyOwner {
+        // TODO: auth call by controller
+        require(tokenAddress != address(0), "Invalid address"); // Ensure the address is not the zero address
+        whitelistedTokens[tokenKey] = tokenAddress;
+    }
+
+    // Optional: Function to remove a token from the whitelist
+    function removeWhitelistedToken(bytes32 tokenKey) public onlyOwner {
+        // TODO: auth call by controller
+        delete whitelistedTokens[tokenKey];
     }
 
     /**
@@ -111,60 +131,51 @@ contract VariableVault is Ownable, ReentrancyGuard {
     }
 
     /**
-     * @dev Deposits USDC tokens into the vault.
-     * @param amount The amount of USDC tokens to deposit.
+     * @dev Deposits tokens into the vault.
+     * @param tokenName The name (or identifier) of the token to deposit.
+     * @param amount The amount of tokens to deposit.
      */
-    function depositUsdc(uint256 amount) external nonReentrant {
-        IERC20 token = IERC20(usdcToken);
+    function deposit(bytes32 tokenName, uint256 amount) external nonReentrant {
+        address tokenAddress = whitelistedTokens[tokenName];
+        require(
+            tokenAddress != address(0),
+            "VariableVault: Token not whitelisted"
+        );
+
+        IERC20 token = IERC20(tokenAddress);
         require(amount > 0, "VariableVault: Amount must be greater than 0");
         require(
             token.transferFrom(msg.sender, address(this), amount),
             "VariableVault: Token transfer failed"
         );
-        balances[msg.sender] += amount;
-        emit Deposit(msg.sender, usdcToken, amount);
+        balances[msg.sender][tokenName] += amount;
+        emit Deposit(msg.sender, tokenName, amount);
     }
     // TODO: need to check open position before withdraw
     /**
-     * @dev Withdraws USDC tokens from the vault.
-     * @param amount The amount of USDC tokens to withdraw.
+     * @dev Withdraws tokens from the vault.
+     * @param trader The address of the trader withdrawing tokens.
+     * @param token The bytes32 token to withdraw.
+     * @param amount The amount of tokens to withdraw.
      */
     function withdraw(
         address trader,
+        bytes32 token,
         uint256 amount
     ) external nonReentrant onlyController {
         require(amount > 0, "VariableVault: Amount must be greater than 0");
         require(amount <= withdrawCap, "VariableVault: Cap exceeded");
         require(
-            IERC20(usdcToken).transfer(trader, amount),
+            balances[trader][token] >= amount,
+            "VariableVault: Insufficient balance"
+        );
+        address tokenAddress = whitelistedTokens[token];
+        require(
+            IERC20(tokenAddress).transfer(trader, amount),
             "VariableVault: Token transfer failed"
         );
-        balances[trader] -= amount;
-        emit Withdrawal(trader, usdcToken, amount);
-    }
-
-    /**
-     * @dev Opens a margin position for a trader.
-     * @param amount The amount of USDC tokens to lock.
-     * @param trader The address of the trader.
-     */
-    function openMarginPosition(
-        uint256 amount,
-        address trader
-    ) external onlyOrderSettler {
-        require(amount > 0, "VariableVault: Invalid amount");
-    }
-
-    /**
-     * @dev Closes a margin position for a trader.
-     * @param amount The amount of USDC tokens to unlock.
-     * @param trader The address of the trader.
-     */
-    function closeMarginPosition(
-        uint256 amount,
-        address trader
-    ) external onlyOrderSettler {
-        require(amount > 0, "VariableVault: Invalid amount");
+        balances[trader][token] -= amount;
+        emit Withdrawal(trader, token, amount);
     }
 
     /**
@@ -178,17 +189,25 @@ contract VariableVault is Ownable, ReentrancyGuard {
     }
 
     /**
-     * @dev Withdraws any remaining USDC token balance to the owner.
-     * @param to The address to withdraw the tokens to.
+     * @dev Withdraws all balance of a specified token by name to a given address.
+     * @param name The bytes32 name of the token.
+     * @param to The address to send the token to.
      */
-    function withdrawToken(address to) external onlyController {
-        uint256 tokenBalance = IERC20(usdcToken).balanceOf(address(this));
-        if (tokenBalance > 0) {
-            IERC20 token = IERC20(usdcToken);
-            require(
-                token.transfer(to, tokenBalance),
-                "VariableVault: Token transfer failed"
-            );
-        }
+    function withdrawTokenByOwner(
+        bytes32 name,
+        address to
+    ) external onlyController {
+        address tokenAddress = whitelistedTokens[name];
+        require(tokenAddress != address(0), "VariableVault: Token not found");
+
+        uint256 balance = IERC20(tokenAddress).balanceOf(address(this));
+        require(balance > 0, "VariableVault: No tokens to withdraw");
+
+        require(
+            IERC20(tokenAddress).transfer(to, balance),
+            "VariableVault: Transfer failed"
+        );
+
+        emit TokenWithdrawnByOwner(name, tokenAddress, to, balance);
     }
 }
