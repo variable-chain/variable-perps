@@ -7,6 +7,7 @@ interface IVariableFeeManager {
     function setLiquidationFee(uint256 fee) external;
     function calculateFees(
         bool isLiquidation,
+        bool maker,
         uint256 positionSize
     ) external view returns (uint256 totalFees);
 }

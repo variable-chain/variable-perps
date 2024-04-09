@@ -197,9 +197,17 @@ contract VariableOrderSettler is
             sellOrder.leverageRatio
         );
         uint256 buyerFees = IVariableFeeManager(variableFeeManager)
-            .calculateFees(buyOrder.isLiquidation, buyOrder.positionSize);
+            .calculateFees(
+                buyOrder.isLiquidation,
+                buyOrder.maker,
+                buyOrder.positionSize
+            );
         uint256 sellerFees = IVariableFeeManager(variableFeeManager)
-            .calculateFees(sellOrder.isLiquidation, sellOrder.positionSize);
+            .calculateFees(
+                sellOrder.isLiquidation,
+                sellOrder.maker,
+                sellOrder.positionSize
+            );
         IVariablePositionManager(variablePositionManager).updatePosition(
             buyOrder.isIncreaseMargin,
             buyOrder.perpMarketId,
@@ -238,11 +246,13 @@ contract VariableOrderSettler is
             uint256 buyerFees = IVariableFeeManager(variableFeeManager)
                 .calculateFees(
                     makerOrder.isLiquidation,
+                    makerOrder.maker,
                     makerOrder.positionSize
                 );
             uint256 sellerFees = IVariableFeeManager(variableFeeManager)
                 .calculateFees(
                     takerOrder.isLiquidation,
+                    takerOrder.maker,
                     takerOrder.positionSize
                 );
             IVariablePositionManager(variablePositionManager).updatePosition(

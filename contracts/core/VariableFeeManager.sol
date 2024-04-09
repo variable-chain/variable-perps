@@ -10,12 +10,16 @@ contract VariableFeeManager is Ownable {
     IVariableController public variableController;
     uint256 public compositFee;
     uint256 public liquidationFee;
+    uint256 public makerFee;
+    uint256 public takerFee;
 
     constructor(
         address _initialOwner,
         address _variableController
     ) Ownable(_initialOwner) {
         variableController = IVariableController(_variableController);
+        makerFee = 50; // 0.5%
+        takerFee = 70; // 0.7%
     }
     /**
      * @dev Modifier to restrict functions to be callable only by the controller.
@@ -43,6 +47,14 @@ contract VariableFeeManager is Ownable {
         compositFee = fee;
     }
 
+    function setMakerFee(uint256 fee) external onlyController {
+        require(fee > 0, "VariableFeeManager: Greater than zero");
+        makerFee = fee;
+    }
+    function setTakerFee(uint256 fee) external onlyController {
+        require(fee > 0, "VariableFeeManager: Greater than zero");
+        takerFee = fee;
+    }
     function setLiquidationFee(uint256 fee) external onlyController {
         require(fee > 0, "VariableFeeManager: Greater than zero");
         liquidationFee = fee;
@@ -50,6 +62,7 @@ contract VariableFeeManager is Ownable {
 
     function calculateFees(
         bool isLiquidation,
+        bool maker,
         uint256 positionSize
     ) external view returns (uint256 totalFees) {
         if (isLiquidation) {
@@ -57,5 +70,15 @@ contract VariableFeeManager is Ownable {
         } else {
             totalFees = (positionSize * compositFee) / 10000;
         }
+        // TODO: need to check deduction of fee
+        if (maker) {
+            // For maker orders, deduct maker fee
+            totalFees += (positionSize * makerFee) / 10000;
+        } else {
+            // For taker orders, deduct taker fee
+            totalFees += (positionSize * takerFee) / 10000;
+        }
+
+        return totalFees;
     }
 }

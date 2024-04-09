@@ -6,15 +6,11 @@ pragma solidity =0.8.20;
  * @dev Interface for the VariableOrderSettler contract.
  */
 interface IVariableOrderSettler {
-    // Define an enum for order types
-    enum OrderType {
-        MarketOrder,
-        LimitOrder
-    }
     // Order struct
     struct OrderStruct {
         bool isLiquidation;
         bool isIncreaseMargin;
+        bool maker;
         address trader;
         bytes32 referralCode;
         bytes32 positionId;
@@ -23,7 +19,6 @@ interface IVariableOrderSettler {
         uint256 positionSize;
         uint256 leverageRatio;
         int256 fundingFee;
-        OrderType orderType;
     }
 
     /**
