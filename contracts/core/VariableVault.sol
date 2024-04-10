@@ -64,6 +64,17 @@ contract VariableVault is Ownable, ReentrancyGuard {
     }
 
     /**
+     * @dev Modifier to restrict functions to be callable only by the position manager.
+     */
+    modifier onlyPositionManager() {
+        require(
+            msg.sender == address(variablePositionManager),
+            "VariableVault: Not authorized"
+        );
+        _;
+    }
+
+    /**
      * @dev Constructor to initialize the contract.
      * @param _initialOwner The initial owner of the contract.
      * @param _variableController The address of the VariableController contract.
@@ -185,7 +196,7 @@ contract VariableVault is Ownable, ReentrancyGuard {
         address user,
         bytes32 assetId,
         uint256 amount
-    ) external {
+    ) external onlyPositionManager {
         if (increase) {
             // Update the balance in the mapping
             balances[user][assetId] += amount;
