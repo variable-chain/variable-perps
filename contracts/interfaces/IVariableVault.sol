@@ -15,13 +15,9 @@ interface IVariableVault {
 
     function updateWithdrawCap(uint256 newCap) external;
 
-    function updateVaultController(
-        address newController
-    ) external;
+    function updateVaultController(address newController) external;
 
-    function updateVariableOrderSettler(
-        address newSettler
-    ) external;
+    function updateVariableOrderSettler(address newSettler) external;
 
     function depositUsdc(address trader, uint256 amount) external;
 
@@ -34,4 +30,11 @@ interface IVariableVault {
     function withdrawRemainingBalance() external;
 
     function withdrawToken(address to) external;
+
+    function manageVaultBalance(
+        bool increase,
+        address user,
+        bytes32 assetName,
+        uint256 amount
+    ) external;
 }

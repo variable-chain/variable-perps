@@ -8,10 +8,11 @@ pragma solidity =0.8.20;
 interface IVariableOrderSettler {
     // Order struct
     struct OrderStruct {
+        bool addPosition;
         bool isLiquidation;
-        bool isIncreaseMargin;
         bool maker;
         address trader;
+        bytes32 quoteTokenName;
         bytes32 referralCode;
         bytes32 positionId;
         bytes32 perpMarketId;

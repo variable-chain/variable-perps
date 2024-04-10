@@ -5,7 +5,8 @@ interface IVariablePositionManager {
     function updateVariableOrderSettler(address newSettler) external;
     function updatePositionController(address newController) external;
     function updatePosition(
-        bool isAddPosition,
+        bool addPosition,
+        bytes32 quoteTokenName,
         bytes32 perpMarketId,
         bytes32 positionId,
         address trader,
