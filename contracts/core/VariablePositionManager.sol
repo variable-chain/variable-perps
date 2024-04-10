@@ -5,6 +5,7 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import "../interfaces/IVariableController.sol";
 import "../interfaces/IVariableOrderSettler.sol";
+import "../interfaces/IVariableVault.sol";
 
 /**
  * @title VariablePositionManager
@@ -24,6 +25,7 @@ contract VariablePositionManager is Ownable, ReentrancyGuard {
     // Instance variables for external contracts
     IVariableOrderSettler public variableOrderSettler;
     IVariableController public variableController;
+    IVariableVault public variableVault;
 
     // Mapping to store position details
     // trader -> positionId -> positionDetail
@@ -57,14 +59,17 @@ contract VariablePositionManager is Ownable, ReentrancyGuard {
      * @param _intialOwner The initial owner of the contract.
      * @param _variableController The address of the VariableController contract.
      * @param _variableOrderSettler The address of the VariableOrderSettler contract.
+     * @param _variableVault The address of variable vault.
      */
     constructor(
         address _intialOwner,
         address _variableController,
-        address _variableOrderSettler
+        address _variableOrderSettler,
+        address _variableVault
     ) Ownable(_intialOwner) {
         variableController = IVariableController(_variableController);
         variableOrderSettler = IVariableOrderSettler(_variableOrderSettler);
+        variableVault = IVariableVault(_variableVault);
     }
 
     /**
@@ -76,6 +81,15 @@ contract VariablePositionManager is Ownable, ReentrancyGuard {
     ) external onlyController {
         require(newSettler != address(0), "VariableVault: Invalid address");
         variableOrderSettler = IVariableOrderSettler(newSettler);
+    }
+
+    /**
+     * @dev Function to update the address of the VariableVault contract.
+     * @param newVault The new address of the VariableOrderSettler contract.
+     */
+    function updateVariableVault(address newVault) external onlyController {
+        require(newVault != address(0), "VariableVault: Invalid address");
+        variableVault = IVariableVault(newVault);
     }
 
     /**
@@ -99,7 +113,8 @@ contract VariablePositionManager is Ownable, ReentrancyGuard {
      * @param fees The fees associated with the position.
      */
     function updatePosition(
-        bool isIncreaseMargin,
+        bool addPosition,
+        bytes32 quoteTokenName,
         bytes32 perpMarketId,
         bytes32 positionId,
         address trader,
@@ -113,7 +128,13 @@ contract VariablePositionManager is Ownable, ReentrancyGuard {
         position.leverageRatio = leverageRatio;
         position.fees += fees;
 
-        if (isIncreaseMargin) {
+        variableVault.manageVaultBalance(
+            addPosition,
+            trader,
+            quoteTokenName,
+            allocatedCollateral
+        );
+        if (addPosition) {
             position.positionSize += positionSize;
 
             position.allocatedCollateral += allocatedCollateral;
@@ -131,8 +152,9 @@ contract VariablePositionManager is Ownable, ReentrancyGuard {
      * @param trader The address of the trader owning the position.
      * @param increase A boolean indicating whether to increase or decrease the margin.
      */
-    function adjustMargin(
+    function adjustCollateral(
         bytes32 positionId,
+        bytes32 quoteTokenName,
         uint256 amount,
         address trader,
         bool increase
@@ -142,6 +164,12 @@ contract VariablePositionManager is Ownable, ReentrancyGuard {
         require(
             positionManager[trader][positionId].positionSize > 0,
             "Position does not exist"
+        );
+        variableVault.manageVaultBalance(
+            increase,
+            trader,
+            quoteTokenName,
+            amount
         );
         if (increase) {
             // Increase allocated collateral

@@ -209,7 +209,8 @@ contract VariableOrderSettler is
                 sellOrder.positionSize
             );
         IVariablePositionManager(variablePositionManager).updatePosition(
-            buyOrder.isIncreaseMargin,
+            buyOrder.addPosition,
+            buyOrder.quoteTokenName,
             buyOrder.perpMarketId,
             buyOrder.positionId,
             buyOrder.trader,
@@ -219,7 +220,8 @@ contract VariableOrderSettler is
             buyerFees
         );
         IVariablePositionManager(variablePositionManager).updatePosition(
-            sellOrder.isIncreaseMargin,
+            sellOrder.addPosition,
+            sellOrder.quoteTokenName,
             sellOrder.perpMarketId,
             sellOrder.positionId,
             sellOrder.trader,
@@ -256,7 +258,8 @@ contract VariableOrderSettler is
                     takerOrder.positionSize
                 );
             IVariablePositionManager(variablePositionManager).updatePosition(
-                makerOrder.isIncreaseMargin,
+                makerOrder.addPosition,
+                makerOrder.quoteTokenName,
                 makerOrder.perpMarketId,
                 makerOrder.positionId,
                 makerOrder.trader,
@@ -266,7 +269,8 @@ contract VariableOrderSettler is
                 buyerFees
             );
             IVariablePositionManager(variablePositionManager).updatePosition(
-                takerOrder.isIncreaseMargin,
+                takerOrder.addPosition,
+                takerOrder.quoteTokenName,
                 takerOrder.perpMarketId,
                 takerOrder.positionId,
                 takerOrder.trader,

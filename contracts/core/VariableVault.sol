@@ -132,7 +132,7 @@ contract VariableVault is Ownable, ReentrancyGuard {
 
     /**
      * @dev Deposits tokens into the vault.
-     * @param tokenName The name (or identifier) of the token to deposit.
+     * @param tokenName The name (or` identifier) of the token to deposit.
      * @param amount The amount of tokens to deposit.
      */
     function deposit(bytes32 tokenName, uint256 amount) external nonReentrant {
@@ -163,6 +163,8 @@ contract VariableVault is Ownable, ReentrancyGuard {
         bytes32 token,
         uint256 amount
     ) external nonReentrant onlyController {
+        // TODO: need to check for opening position
+        // TODO: need to create function for collateral
         require(amount > 0, "VariableVault: Amount must be greater than 0");
         require(amount <= withdrawCap, "VariableVault: Cap exceeded");
         require(
@@ -177,6 +179,31 @@ contract VariableVault is Ownable, ReentrancyGuard {
         balances[trader][token] -= amount;
         emit Withdrawal(trader, token, amount);
     }
+
+    function manageVaultBalance(
+        bool increase,
+        address user,
+        bytes32 assetId,
+        uint256 amount
+    ) external {
+        if (increase) {
+            // Update the balance in the mapping
+            balances[user][assetId] += amount;
+        } else {
+            // Update the balance in the mapping
+            balances[user][assetId] -= amount;
+        }
+
+        // Emit an event for the balance update (optional)
+        emit BalanceUpdated(user, assetId, amount);
+    }
+
+    // Event declaration for a balance update (optional but recommended for transparency)
+    event BalanceUpdated(
+        address indexed user,
+        bytes32 indexed assetId,
+        uint256 newBalance
+    );
 
     /**
      * @dev Withdraws any remaining ETH balance to the owner.
